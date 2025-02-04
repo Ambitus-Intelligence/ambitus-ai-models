@@ -52,8 +52,10 @@ All notebooks are stored in `/notebooks`. Example workflows:
 For questions or collaborations, contact:
 
 Lead Developers:
-- [Vedant Yadav](@TheMimikyu)
-- [Nidhi Satyapriya](@Nidhi-Satyapriya)
+
+- [Vedant Yadav](https://github.com/TheMimikyu)
+
+- [Nidhi Satyapriya](https://github.com/Nidhi-Satyapriya)
 
 ---
 Part of the Next-Gen Market Intelligence Suite
