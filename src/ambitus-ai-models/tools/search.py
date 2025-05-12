@@ -1,1 +1,0 @@
-# Defines the search tool pipeline(SuperComponent/ComponentTool).
