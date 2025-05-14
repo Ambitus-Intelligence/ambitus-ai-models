@@ -98,6 +98,13 @@ flowchart LR
   classDef database fill:#fdd0a2,stroke:#333,stroke-width:2px,rx:5,ry:5;
 
 ```
+## MCP Server [Tools & Data Sources]
+The FastMCP server is the core of our system, providing a centralized location for all tools and data sources. Each agent can access these resources as needed, allowing for efficient data processing and analysis.
+
+> ⚠️🚧: Exact choice of tools and data sources is still under discussion and continuously changing. This part of documentation will be updated once it gets consolidated.
+>
+> **NOTE:** Upon completion, the tools and data sources will be listed in the **mcp_server.md** document along with their respective configurations and usage instructions. 
+
 
 ## References
 - [MCP Tool Documentation](https://docs.haystack.deepset.ai/docs/mcptool)
