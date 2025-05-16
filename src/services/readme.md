@@ -1,0 +1,1 @@
+# Directory for various microservice integrations and a bridge between mcp implementation and service layer. 
