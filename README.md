@@ -63,12 +63,40 @@ ambitus-ai-models/
 ├── notebooks/                                  # Experimental Jupyter/Colab prototypes
 │   ├── Experiment ##- <experiment_name>.ipynb   
 │   └── ...                                     # Additional experiments in ##-*.ipynb format
-├── src/                                        # Production code (rapidly changing)
-│   ├── agents/                                 # Agent implementations (one class per agent)
-│   ├── tools/                                  # FastMCP-registered utilities & CitationAgent
-│   └── orchestrator.py                         # Master orchestration logic
-├── requirements.txt                            # Python dependencies
-└── README.md                                   # Project overview (this file)
+├── src/                          # Source code
+│   ├── agents/                   # Individual agent implementations
+│   │   ├── __init__.py
+│   │   ├── company_research_agent.py
+│   │   ├── industry_analysis_agent.py
+│   │   ├── market_data_agent.py
+│   │   ├── competitive_landscape_agent.py
+│   │   ├── gap_analysis_agent.py
+│   │   ├── opportunity_agent.py
+│   │   ├── report_synthesis_agent.py
+│   │   └── citation_agent.py
+│   │
+│   ├── mcp/                      # MCP server configuration and tools
+│   │   ├── __init__.py
+│   │   ├── server.py             # FastMCP server implementation
+│   │   ├── tools/                # Tool implementations
+│   │   │   ├── __init__.py
+│   │   │   └── ...               # Individual tool modules
+│   │   └── data_sources/         # Data source connectors
+│   │       ├── __init__.py
+│   │       └── ...               # Individual data source modules
+│   │
+│   ├── api/                      # Backend API for web application
+│   │   ├── __init__.py
+│   │   └── routes.py             # API endpoints
+│   │
+│   └── utils/                    # Shared utilities
+│       ├── __init__.py
+│       └── ...
+│
+├── .env.example                  # Example environment variables
+├── pyproject.toml                # Project configuration and dependencies
+├── README.md                     # Project overview
+└── .gitignore                    # Git ignore file
 ```
 ---
 
