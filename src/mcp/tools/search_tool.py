@@ -9,11 +9,6 @@ from duckduckgo_api_haystack import DuckduckgoApiWebSearch
 from typing import List
 from haystack import component, Document
 
-# Tool Creation Imports
-from haystack.tools.tool import Tool
-from haystack.core.super_component import SuperComponent
-from haystack.tools import ComponentTool
-
 # Custom Component to manage source URLs
 @component
 class DocumentFormatter:
@@ -44,28 +39,6 @@ search_pipe.add_component("formatter", DocumentFormatter())
 search_pipe.connect("search.links", "fetcher.urls")
 search_pipe.connect("fetcher.streams", "converter.sources")
 search_pipe.connect("converter.documents", "formatter.documents")
-
-search_tool_component = SuperComponent(
-    pipeline=search_pipe,
-    input_mapping={
-        "query": ["search.query"],
-    },
-    output_mapping={
-        "formatter.sources": "sources",
-        "formatter.information": "information"
-    }
-)
-
-search_tool_internal = ComponentTool(
-    name="search_tool",
-    description="""Perform a web search for the given query and return two parallel lists. 
-        Input format: {query: <search query>}
-        Output format:
-        - `sources` (each entry is "Source <n>: <url>")
-        - `information` (each entry is "Information <n>: <info_snippet>").
-        """,
-    component=search_tool_component
-)
 
 # MCP compliant wrapper function
 def search_tool(query: str) -> dict:
