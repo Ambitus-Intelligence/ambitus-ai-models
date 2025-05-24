@@ -1,11 +1,14 @@
 from fastmcp import FastMCP
 from tools.ping_tool import ping_tool
+from tools.search_tool import search_tool
 
 # Create FastMCP server instance
 mcp = FastMCP("ambitus-tools-mcp")
 
 # Register the ping tool function
 mcp.add_tool(ping_tool)
+# Register the search tool function
+mcp.add_tool(search_tool)
 
 def main():
     """Start the MCP server with SSE transport"""
