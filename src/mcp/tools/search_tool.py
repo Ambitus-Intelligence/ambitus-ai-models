@@ -36,7 +36,7 @@ class DocumentFormatter:
 # Search Pipeline
 search_pipe = Pipeline()
 
-search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=10, backend="html"))
+search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=10, backend="auto"))
 search_pipe.add_component("fetcher", LinkContentFetcher(timeout=3, raise_on_failure=False, retry_attempts=2))
 search_pipe.add_component("converter", MultiFileConverter())
 search_pipe.add_component("formatter", DocumentFormatter())
@@ -56,7 +56,7 @@ search_tool_component = SuperComponent(
     }
 )
 
-search_tool = ComponentTool(
+search_tool_internal = ComponentTool(
     name="search_tool",
     description="""Perform a web search for the given query and return two parallel lists. 
         Input format: {query: <search query>}
@@ -68,7 +68,7 @@ search_tool = ComponentTool(
 )
 
 # MCP compliant wrapper function
-def search_tool_mcp(query: str) -> dict:
+def search_tool(query: str) -> dict:
     """
     Perform a web search for the given query and return sources and information.
     
@@ -96,5 +96,5 @@ def search_tool_mcp(query: str) -> dict:
         }
 
 # Set function metadata for FastMCP
-search_tool_mcp.__name__ = "search_tool"
-search_tool_mcp.__doc__ = "Perform a web search and return sources and information lists"
+search_tool.__name__ = "search_tool"
+search_tool.__doc__ = "Perform a web search and return sources and information lists"
