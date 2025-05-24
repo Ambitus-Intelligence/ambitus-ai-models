@@ -1,7 +1,7 @@
 # Generic Pipeline Imports
 from haystack import Pipeline
 from haystack.components.fetchers import LinkContentFetcher
-from haystack.converters import MultiFileConverter
+from haystack.components.converters import MultiFileConverter
 from haystack.components.builders.chat_prompt_builder import ChatPromptBuilder
 from duckduckgo_api_haystack import DuckduckgoApiWebSearch
 
