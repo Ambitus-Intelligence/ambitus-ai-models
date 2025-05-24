@@ -5,8 +5,19 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "docstring-parser>=0.16",
     "duckduckgo-api-haystack>=0.1.15",
     "fastmcp>=2.5.0",
     "haystack-ai>=2.13.2",
+    "jq>=1.8.0",
+    "markdown-it-py>=3.0.0",
+    "mdit-plain>=1.0.1",
+    "openpyxl>=3.1.5",
+    "pandas>=2.2.3",
+    "pypdf>=5.5.0",
+    "python-docx>=1.1.2",
+    "python-pptx>=1.0.2",
     "requests>=2.32.3",
+    "tabulate>=0.9.0",
+    "trafilatura>=2.0.0",
 ]
