@@ -1,8 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from agents.company_research_agent import run_company_research_agent
-from utils.validation import CompanyValidator
-from utils.mcp_manager import MCPServerManager
+from typing import Dict, Any
+from src.agents.company_research_agent import run_company_research_agent
+from src.utils.validation import CompanyValidator
+from src.utils.mcp_manager import MCPServerManager
 
 router = APIRouter()
 
@@ -19,7 +20,7 @@ class CompanyResearchResponse(BaseModel):
     validation: Dict[str, Any] = None
     error: str = None
 
-@app.post("/", response_model=CompanyResearchResponse)
+@router.post("/", response_model=CompanyResearchResponse)
 async def research_company(request: CompanyResearchRequest):
     """
     Research a company using the CompanyResearchAgent.
@@ -58,7 +59,7 @@ async def research_company(request: CompanyResearchRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/agents/company-research/schema")
+@router.get("/schema")
 async def get_company_schema():
     """Get the JSON schema for company research output"""
     return company_validator.get_schema()

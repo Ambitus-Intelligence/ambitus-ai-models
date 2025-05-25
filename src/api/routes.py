@@ -1,14 +1,20 @@
+import sys
+import os
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any
-from routes import api_router
-import sys
-import os
+
+# Add project root to path for absolute imports
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, project_root)
+
+from src.api.routes import api_router
+from src.utils.mcp_manager import MCPServerManager
 
 # Add src to path for imports
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+# sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from utils.mcp_manager import MCPServerManager
+
 
 app = FastAPI(title="Ambitus AI Models API", version="0.0.1")
 
