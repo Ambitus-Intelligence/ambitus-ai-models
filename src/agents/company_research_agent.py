@@ -81,7 +81,7 @@ def run_company_research_agent(company_name: str) -> Dict[str, Any]:
         )
         
         # Extract the final response
-        final_message = response["messages"][-1].
+        final_message = response["messages"][-1].text
         
         # Try to parse as JSON
         try:
