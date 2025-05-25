@@ -26,38 +26,36 @@ async def research_company(request: CompanyResearchRequest):
     Research a company using the CompanyResearchAgent.
     Automatically ensures MCP server is running.
     """
-    try:
-        # Ensure MCP server is running
-        mcp_status = mcp_manager.ensure_server_running()
-        if not mcp_status["success"]:
-            raise HTTPException(
-                status_code=503, 
-                detail=f"MCP server not available: {mcp_status['message']}"
-            )
-            
-        # Run the agent
-        agent_result = run_company_research_agent(request.company_name)
-        
-        if not agent_result["success"]:
-            return CompanyResearchResponse(
-                success=False,
-                error=agent_result["error"],
-                mcp_status=mcp_status
-            )
-        
-        # Validate the output
-        validation_result = company_validator.validate(agent_result["data"])
-        
-        return CompanyResearchResponse(
-            success=validation_result["valid"],
-            data=validation_result["data"] if validation_result["valid"] else agent_result["data"],
-            validation=validation_result,
-            mcp_status=mcp_status,
-            error=validation_result["error"] if not validation_result["valid"] else None
+    # Ensure MCP server is running
+    mcp_status = mcp_manager.ensure_server_running()
+    if not mcp_status["success"]:
+        raise HTTPException(
+            status_code=503, 
+            detail=f"MCP server not available: {mcp_status['message']}"
         )
         
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Run the agent
+    agent_result = run_company_research_agent(request.company_name)
+    
+    if not agent_result["success"]:
+        return CompanyResearchResponse(
+            success=False,
+            error=agent_result["error"],
+            mcp_status=mcp_status
+        )
+    
+    # Validate the output
+    validation_result = company_validator.validate(agent_result["data"])
+    
+    return CompanyResearchResponse(
+        success=validation_result["valid"],
+        data=validation_result["data"] if validation_result["valid"] else agent_result["data"],
+        validation=validation_result,
+        mcp_status=mcp_status,
+        error=validation_result["error"] if not validation_result["valid"] else None
+    )
+        
+
 
 @router.get("/schema")
 async def get_company_schema():
