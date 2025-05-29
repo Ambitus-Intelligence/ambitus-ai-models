@@ -7,10 +7,12 @@ requires-python = ">=3.11"
 dependencies = [
     "docstring-parser>=0.16",
     "duckduckgo-api-haystack>=0.1.15",
+    "fastapi>=0.115.12",
     "fastmcp>=2.5.0",
     "haystack-ai>=2.13.2",
     "jq>=1.8.0",
     "markdown-it-py>=3.0.0",
+    "mcp-haystack>=0.2.0",
     "mdit-plain>=1.0.1",
     "openpyxl>=3.1.5",
     "pandas>=2.2.3",

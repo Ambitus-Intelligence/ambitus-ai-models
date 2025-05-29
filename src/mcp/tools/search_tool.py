@@ -31,7 +31,7 @@ class DocumentFormatter:
 # Search Pipeline
 search_pipe = Pipeline()
 
-search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=10, backend="auto"))
+search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=5, backend="auto"))
 search_pipe.add_component("fetcher", LinkContentFetcher(timeout=3, raise_on_failure=False, retry_attempts=2))
 search_pipe.add_component("converter", MultiFileConverter())
 search_pipe.add_component("formatter", DocumentFormatter())
