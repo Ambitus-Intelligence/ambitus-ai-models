@@ -7,7 +7,7 @@ api_router = APIRouter()
 
 # Include all route modules
 api_router.include_router(company_research_router, prefix="/company-research", tags=["company_research"])
-api_router.include_router(industry_analysis_router, prefix="/agents/industry-analysis", tags=["industry_analysis"])
+api_router.include_router(industry_analysis_router, prefix="/industry-analysis", tags=["industry_analysis"])
 
 # Future agent routes can be added here:
 # api_router.include_router(market_router, prefix="/market", tags=["market"])
