@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Dict, Any, List # Added List
+from typing import Dict, Any, List
 from dotenv import load_dotenv
 from haystack.components.generators.chat import OpenAIChatGenerator
 from haystack.dataclasses import ChatMessage
@@ -17,13 +17,6 @@ def create_industry_analysis_agent():
     Factory function to create an agent that analyzes a company's profile 
     and suggests ranked industry/domain expansion opportunities.
     """
-    
-    """ server_info = SSEServerInfo(
-        base_url="http://localhost:8000", # Assuming MCP server is running locally
-    )
-
-    search_tool = MCPTool(name="search_tool", server_info=server_info)
-    tools = [search_tool] """
 
     system_prompt = """
 You are IndustryAnalysisAgent, an AI expert in market strategy and domain expansion.
@@ -57,7 +50,7 @@ Be factual and logical. Avoid hallucination or baseless speculation. Respond onl
     
     return agent
 
-def run_company_research_agent(company_profile: Dict[str, Any]) -> Dict[str, Any]:
+def run_industry_analysis_agent(company_profile: Dict[str, Any]) -> Dict[str, Any]:
     """
     Run the Industry Analysis Agent for a given structured company profile.
 
