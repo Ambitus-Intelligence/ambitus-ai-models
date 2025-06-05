@@ -17,8 +17,8 @@ class CompanyResearchRequest(BaseModel):
 class CompanyResearchResponse(BaseModel):
     success: bool
     data: Optional[dict] = None
-    validation: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    raw_response: Optional[str] = None
 
 @router.post("/", response_model=CompanyResearchResponse)
 async def research_company(request: CompanyResearchRequest):
@@ -41,24 +41,40 @@ async def research_company(request: CompanyResearchRequest):
         return CompanyResearchResponse(
             success=False,
             error=agent_result["error"],
-            mcp_status=mcp_status
+            raw_response=agent_result.get("raw_response")
         )
     
     # Validate the output
     validation_result = company_validator.validate(agent_result["data"])
     
+    if not validation_result["valid"]:
+        return CompanyResearchResponse(
+            success=False,
+            error=validation_result['error'],
+            raw_response=agent_result.get("raw_response")
+        )
+    
     return CompanyResearchResponse(
-        success=validation_result["valid"],
-        #success= agent_result["success"],
-        data= validation_result["data"] if validation_result["valid"] else agent_result["data"], 
-        validation=validation_result,
-        mcp_status=mcp_status,
-        error=validation_result["error"] if not validation_result["valid"] else None
+        success=True,
+        data=validation_result["data"],
+        raw_response=agent_result.get("raw_response")
     )
-        
 
+@router.get("/schema/input")
+async def get_input_schema() -> Dict[str, Any]:
+    """Get the input schema for company research (company name string)"""
+    return {
+        "type": "object",
+        "properties": {
+            "company_name": {
+                "type": "string",
+                "description": "Name of the company to research"
+            }
+        },
+        "required": ["company_name"]
+    }
 
-@router.get("/schema")
-async def get_company_schema():
-    """Get the JSON schema for company research output"""
+@router.get("/schema/output")
+async def get_output_schema() -> Dict[str, Any]:
+    """Get the output schema for company research"""
     return company_validator.get_schema()
