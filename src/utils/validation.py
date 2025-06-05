@@ -16,6 +16,13 @@ class IndustryOpportunity(BaseModel):
     rationale: str
     sources: List[str]
 
+class CompetitiveLandscape(BaseModel):
+    competitor: str
+    product: str
+    market_share: float
+    note: str
+    sources: List[str]
+
 class BaseValidator:
     """Base validator class with common validation methods"""
     
@@ -138,4 +145,59 @@ class IndustryAnalysisValidator:
         return {
             "type": "array",
             "items": IndustryOpportunity.model_json_schema()
+        }
+
+class CompetitiveLandscapeValidator:
+    """Validator for Competitive Landscape Agent input and output"""
+    
+    def __init__(self):
+        self.input_validator = BaseValidator(IndustryOpportunity)
+        self.output_model = List[CompetitiveLandscape]
+        
+    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate input industry opportunity data"""
+        return self.input_validator.validate(data)
+    
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate competitive landscape output against the expected schema.
+        
+        Args:
+            data: List of competitor information
+            
+        Returns:
+            Dict with validation results
+        """
+        try:
+            validated_competitors = [CompetitiveLandscape.model_validate(item) for item in data]
+            
+            return {
+                "valid": True,
+                "data": [comp.model_dump() for comp in validated_competitors],
+                "error": None
+            }
+            
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+    
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the input IndustryOpportunity model"""
+        return self.input_validator.get_schema()
+    
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output CompetitiveLandscape list"""
+        return {
+            "type": "array",
+            "items": CompetitiveLandscape.model_json_schema()
         }
