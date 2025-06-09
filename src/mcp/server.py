@@ -1,6 +1,6 @@
 from fastmcp import FastMCP
-from src.mcp.tools.ping_tool import ping_tool
-from src.mcp.tools.search_tool import search_tool
+from tools.ping_tool import ping_tool
+from tools.search_tool import search_tool
 from fastapi import Request
 from fastapi.responses import PlainTextResponse
 
@@ -31,4 +31,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -19,13 +19,3 @@ def ping_tool(message: str = "ping") -> Dict[str, Any]:
 # Add tool metadata
 ping_tool.__name__ = "ping"
 ping_tool.__doc__ = "Echo back any input message - useful for testing connectivity"
-
-# from haystack.tools import tool
-
-# @tool(name="ping_tool", description="Echo back a message")
-# def ping_tool(message: str = "ping") -> dict:
-#     return {
-#         "echo": message,
-#         "status": "success",
-#         "tool": "ping"
-#     }
