@@ -23,27 +23,12 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
-# Add these to the top models
-class MarketSize(BaseModel):
-    value: str
-    year: str
-    sources: List[str]
-
-class GrowthRate(BaseModel):
-    value: str
-    period: str
-    sources: List[str]
-
-class MarketTrend(BaseModel):
-    trend: str
-    sources: List[str]
-
+# Remove the old MarketSize, GrowthRate, MarketTrend models and replace MarketData
 class MarketData(BaseModel):
-    domain: str
-    market_size: MarketSize
-    growth_rate: GrowthRate
-    key_trends: List[MarketTrend]
-    notes: str
+    market_size_usd: float
+    CAGR: float
+    key_drivers: List[str]
+    sources: List[str]
 
 class BaseValidator:
     """Base validator class with common validation methods"""
