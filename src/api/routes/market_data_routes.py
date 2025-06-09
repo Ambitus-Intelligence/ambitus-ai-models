@@ -18,7 +18,7 @@ class MarketDataResponse(BaseModel):
     error: Optional[str] = None
     raw_response: Optional[str] = None
 
-@router.post("/fetch", response_model=MarketDataResponse, tags=["Market Data"])
+@router.post("/", response_model=MarketDataResponse, tags=["Market Data"])
 async def fetch_market_data(request: MarketDataRequest) -> MarketDataResponse:
     """
     Fetch market data for a given domain using the Market Data Agent.
