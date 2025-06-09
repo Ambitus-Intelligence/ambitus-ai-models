@@ -1,4 +1,6 @@
-.venv
+venv
 .env
 __pycache__/
 temp.py
+pdm.lock
+.venv
