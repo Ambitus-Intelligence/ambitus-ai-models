@@ -71,3 +71,66 @@ def search_tool(query: str) -> dict:
 # Set function metadata for FastMCP
 search_tool.__name__ = "search_tool"
 search_tool.__doc__ = "Perform a web search and return sources and information lists"
+
+# from fastmcp.tools import tool
+
+# # Haystack and DuckDuckGo pipeline components
+# from haystack import Pipeline
+# from haystack.components.fetchers import LinkContentFetcher
+# from haystack.components.converters import MultiFileConverter
+# from haystack.components.builders.chat_prompt_builder import ChatPromptBuilder
+# from duckduckgo_api_haystack import DuckduckgoApiWebSearch
+
+# # Custom formatter component
+# from typing import List
+# from haystack import component, Document
+
+# @component
+# class DocumentFormatter:
+#     @component.output_types(sources=List[str], information=List[str])
+#     def run(self, documents: List[Document]):
+#         sources: List[str] = []
+#         information: List[str] = []
+#         for idx, doc in enumerate(documents, start=1):
+#             url = doc.meta.get("url", "<no-url>")
+#             sources.append(f"Source {idx}: {url}")
+#             information.append(f"Information {idx}: {doc.content}")
+#         return {"sources": sources, "information": information}
+
+
+# # Build the pipeline
+# search_pipe = Pipeline()
+# search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=5, backend="auto"))
+# search_pipe.add_component("fetcher", LinkContentFetcher(timeout=3, raise_on_failure=False, retry_attempts=2))
+# search_pipe.add_component("converter", MultiFileConverter())
+# search_pipe.add_component("formatter", DocumentFormatter())
+
+# search_pipe.connect("search.links", "fetcher.urls")
+# search_pipe.connect("fetcher.streams", "converter.sources")
+# search_pipe.connect("converter.documents", "formatter.documents")
+
+
+# # FastMCP-compatible tool function
+# @tool(name="search_tool", description="Perform a web search and return sources and information.")
+# def search_tool(query: str) -> dict:
+#     """
+#     Args:
+#         query (str): The search query string.
+
+#     Returns:
+#         dict: {'sources': [...], 'information': [...], 'status': 'success'} or error info.
+#     """
+#     try:
+#         result = search_pipe.run({"search": {"query": query}})
+#         return {
+#             "sources": result.get("formatter", {}).get("sources", []),
+#             "information": result.get("formatter", {}).get("information", []),
+#             "status": "success"
+#         }
+#     except Exception as e:
+#         return {
+#             "sources": [],
+#             "information": [],
+#             "status": "error",
+#             "error": str(e)
+#         }

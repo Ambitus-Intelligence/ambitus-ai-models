@@ -15,7 +15,7 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 def create_market_data_agent():
     """Factory function to create a configured Market Data Agent"""
     server_info = SSEServerInfo(
-        base_url="http://localhost:8000",  # Your MCPTool endpoint
+        base_url="http://localhost:8000",
     )
 
     market_tool = MCPTool(name="market_data_tool", server_info=server_info)
