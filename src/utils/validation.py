@@ -23,6 +23,28 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
+# Add these to the top models
+class MarketSize(BaseModel):
+    value: str
+    year: str
+    sources: List[str]
+
+class GrowthRate(BaseModel):
+    value: str
+    period: str
+    sources: List[str]
+
+class MarketTrend(BaseModel):
+    trend: str
+    sources: List[str]
+
+class MarketData(BaseModel):
+    domain: str
+    market_size: MarketSize
+    growth_rate: GrowthRate
+    key_trends: List[MarketTrend]
+    notes: str
+
 class BaseValidator:
     """Base validator class with common validation methods"""
     
@@ -201,3 +223,36 @@ class CompetitiveLandscapeValidator:
             "type": "array",
             "items": CompetitiveLandscape.model_json_schema()
         }
+class MarketDataValidator:
+    """Validator for Market Data Agent output"""
+
+    def __init__(self):
+        self.output_validator = BaseValidator(MarketData)
+
+    def validate_output(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate the Market Data Agent output.
+        
+        Args:
+            data: Dictionary containing market data
+        
+        Returns:
+            Dict with validation results
+        """
+        return self.output_validator.validate(data)
+
+    def validate_output_json(self, json_string: str) -> Dict[str, Any]:
+        """
+        Validate Market Data Agent output from a JSON string.
+
+        Args:
+            json_string: Market data as a JSON string
+
+        Returns:
+            Dict with validation results
+        """
+        return self.output_validator.validate_json_string(json_string)
+
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the MarketData model"""
+        return self.output_validator.get_schema()
