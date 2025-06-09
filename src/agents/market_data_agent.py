@@ -29,32 +29,20 @@ Guidelines:
 1. Use Only Trusted Sources: Prioritize financial APIs, market intelligence reports, trend data, and official statistics.
 2. Organize Information: Return a JSON object with the following structure:
 {
-  "domain": "<domain name>",
-  "market_size": {
-    "value": "<e.g., 35B USD>",
-    "year": "<most recent year available>",
-    "sources": ["<url1>", "<url2>"]
-  },
-  "growth_rate": {
-    "value": "<e.g., 12% CAGR>",
-    "period": "<e.g., 2023-2028>",
-    "sources": ["<url1>", "<url2>"]
-  },
-  "key_trends": [
-    {
-      "trend": "<brief summary of trend>",
-      "sources": ["<url1>", "<url2>"]
-    }
-  ],
-  "notes": "<any additional relevant insights or qualifiers>"
+  "market_size_usd": <market size in USD as a number (e.g., 5000000000 for 5B USD)>,
+  "CAGR": <compound annual growth rate as a decimal (e.g., 0.07 for 7%)>,
+  "key_drivers": ["<driver1>", "<driver2>", "<driver3>"],
+  "sources": ["<url1>", "<url2>", "<url3>"]
 }
 3. Avoid Speculation: Only include what can be found from reliable data sources.
 4. Use JSON Only: No narrative outside the JSON.
+5. Convert market size to USD numerical value (e.g., 5B USD = 5000000000)
+6. Convert growth rates to decimal format (e.g., 12% = 0.12)
 """
 
     return Agent(
         chat_generator=OpenAIChatGenerator(
-            model="gpt-4o-mini",
+            model="o4-mini",
             api_key=Secret.from_token(OPENAI_API_KEY),
         ),
         tools=tools,
