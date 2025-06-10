@@ -30,6 +30,12 @@ class MarketData(BaseModel):
     key_drivers: List[str]
     sources: List[str]
 
+class Opportunity(BaseModel):
+    title: str
+    priority: str  
+    description: str
+    sources: List[str]
+
 class BaseValidator:
     """Base validator class with common validation methods"""
     
@@ -241,3 +247,50 @@ class MarketDataValidator:
     def get_output_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the MarketData model"""
         return self.output_validator.get_schema()
+
+
+class OpportunityAgentValidator:
+    """Validator for Opportunity Agent output"""
+
+    def __init__(self):
+        self.output_model = Opportunity
+
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate the Opportunity Agent output list.
+
+        Args:
+            data: List of opportunity dictionaries
+
+        Returns:
+            Dict with validation results
+        """
+        try:
+            validated_items = [self.output_model.model_validate(item) for item in data]
+            return {
+                "valid": True,
+                "data": [item.model_dump() for item in validated_items],
+                "error": None
+            }
+
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output Opportunity list"""
+        return {
+            "type": "array",
+            "items": Opportunity.model_json_schema()
+        }
