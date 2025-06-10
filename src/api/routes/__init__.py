@@ -13,7 +13,7 @@ api_router.include_router(company_research_router, prefix="/company-research", t
 api_router.include_router(industry_analysis_router, prefix="/industry-analysis", tags=["industry_analysis"])
 api_router.include_router(competitive_landscape_router, prefix="/competitive-landscape", tags=["competitive_landscape"])
 api_router.include_router(market_data_router, prefix="/market-data", tags=["market_data"])
-api_router.include_router(opportunity_agent_router, prefix="/opportunity_agent", tags=["opportunity_agent"])
+api_router.include_router(opportunity_agent_router, prefix="/opportunity", tags=["opportunity"])
 
 # Future agent routes can be added here:
 # api_router.include_router(market_router, prefix="/market", tags=["market"])
