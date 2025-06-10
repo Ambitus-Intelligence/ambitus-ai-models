@@ -23,32 +23,11 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
-# Add these to the top models
-class MarketSize(BaseModel):
-    value: str
-    year: str
-    sources: List[str]
-
-class GrowthRate(BaseModel):
-    value: str
-    period: str
-    sources: List[str]
-
-class MarketTrend(BaseModel):
-    trend: str
-    sources: List[str]
-
+# Remove the old MarketSize, GrowthRate, MarketTrend models and replace MarketData
 class MarketData(BaseModel):
-    domain: str
-    market_size: MarketSize
-    growth_rate: GrowthRate
-    key_trends: List[MarketTrend]
-    notes: str
-
-class Opportunity(BaseModel):
-    title: str
-    priority: str  # Expected values: "High", "Medium", "Low"
-    description: str
+    market_size_usd: float
+    CAGR: float
+    key_drivers: List[str]
     sources: List[str]
 
 class BaseValidator:
@@ -262,49 +241,3 @@ class MarketDataValidator:
     def get_output_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the MarketData model"""
         return self.output_validator.get_schema()
-
-class OpportunityAgentValidator:
-    """Validator for Opportunity Agent output"""
-
-    def __init__(self):
-        self.output_model = Opportunity
-
-    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Validate the Opportunity Agent output list.
-
-        Args:
-            data: List of opportunity dictionaries
-
-        Returns:
-            Dict with validation results
-        """
-        try:
-            validated_items = [self.output_model.model_validate(item) for item in data]
-            return {
-                "valid": True,
-                "data": [item.model_dump() for item in validated_items],
-                "error": None
-            }
-
-        except ValidationError as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e),
-                "error_details": e.errors()
-            }
-
-        except Exception as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Unexpected validation error: {str(e)}"
-            }
-
-    def get_output_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the output Opportunity list"""
-        return {
-            "type": "array",
-            "items": Opportunity.model_json_schema()
-        }
