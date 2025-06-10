@@ -3,7 +3,6 @@ from .company_research_routes import router as company_research_router
 from .industry_analysis_routes import router as industry_analysis_router
 from .competitive_landscape_routes import router as competitive_landscape_router
 from .market_data_routes import router as market_data_router
-from .market_data_routes import router as market_data_router
 from .opportunity_agent_routes import router as opportunity_agent_router
 
 # Main router that combines all sub-routers
