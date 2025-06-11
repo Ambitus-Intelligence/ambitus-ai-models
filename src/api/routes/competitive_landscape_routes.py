@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, List
 from src.agents.competitive_landscape_agent import run_competitive_landscape_agent
-from src.utils.validation import CompetitiveLandscapeValidator
+from src.utils.validation import CompetitiveLandscapeValidator, IndustryOpportunity
 from src.utils.mcp_manager import MCPServerManager
 
 router = APIRouter()
@@ -11,12 +11,6 @@ router = APIRouter()
 competitive_landscape_validator = CompetitiveLandscapeValidator()
 mcp_manager = MCPServerManager()
 
-class CompetitiveLandscapeRequest(BaseModel):
-    domain: str
-    score: float
-    rationale: str
-    sources: List[str]
-
 class CompetitiveLandscapeResponse(BaseModel):
     success: bool
     data: Optional[list] = None
@@ -24,7 +18,7 @@ class CompetitiveLandscapeResponse(BaseModel):
     raw_response: Optional[str] = None
 
 @router.post("/", response_model=CompetitiveLandscapeResponse)
-async def analyze_competitive_landscape(request: CompetitiveLandscapeRequest):
+async def analyze_competitive_landscape(request: IndustryOpportunity) -> CompetitiveLandscapeResponse:
     """
     Analyze competitive landscape using the CompetitiveLandscapeAgent.
     Automatically ensures MCP server is running.
