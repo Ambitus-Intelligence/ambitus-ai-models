@@ -23,16 +23,17 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
+class MarketGapAnalystInput(BaseModel):
+    company_profile: Dict[str,Any]
+    competitor_list: List[Dict[str,Any]]
+    market_stats: Dict[str,Any]
+
 class MarketGapAnalystOutput(BaseModel):
     gap: str
     impact: str
     evidance: str
     sources: str
 
-class MarketGapAnalystInput(BaseModel):
-    company_profile: Company
-    competitor_list: List[CompetitiveLandScape]
-    market_stats: Dict[str,Any]
 
 class BaseValidator:
     """Base validator class with common validation methods"""
@@ -217,12 +218,12 @@ class MarketGapAnalystValidator:
     """Validator for Market Gap Analyst Agent input and output"""
     
     def __init__(self):
-        # self.input_validator = BaseValidator(...)
-        self.output_model = List[MarketGapAnalyst]
+        self.input_validator = BaseValidator(MarketGapAnalystInput)
+        self.output_model = List[MarketGapAnalystOutput]
         
     def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate input data"""
-        pass
+        """Validate market gap analyst input model."""
+        return self.input_validator.validate(data)
     
     def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -235,7 +236,7 @@ class MarketGapAnalystValidator:
             Dict with validation results
         """
         try:
-            validated_market_gaps = [MarketGapAnalyst.model_validate(item) for item in data]
+            validated_market_gaps = [MarketGapAnalystOutput.model_validate(item) for item in data]
             
             return {
                 "valid": True,
@@ -258,12 +259,12 @@ class MarketGapAnalystValidator:
             }
     
     def get_input_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the input model"""
-        pass
+        """Get the JSON schema for the input MarketGapAnalyst input model."""
+        return self.input_validator.get_schema()
     
     def get_output_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the output MarketGapAnalyst response list"""
+        """Get the JSON schema for the output MarketGapAnalyst response list."""
         return {
             "type": "array",
-            "items": MarketGapAnalyst.model_json_schema()
+            "items": MarketGapAnalystOutput.model_json_schema()
         }

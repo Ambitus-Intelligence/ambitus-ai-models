@@ -2,19 +2,18 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from src.agents.market_gap_agent import run_market_gap_analysis_agent
-from src.utils.validation import MarketGapAnalystValidator, Company, 
+from src.utils.validation import MarketGapAnalystValidator
 
 router = APIRouter()
 
 # Initialize validator
 validator = MarketGapAnalystValidator()
 
-# Input Model : Because, this can be imported from `validation.py`
-# Why ? since, the 'MarketGapAnalystInput' model is a hybrid of other models.
-# class MarketGapAnalystRequest(BaseModel):
-#     company_profile: Company
-#     competitor_list: List[str]
-#     market_stats: 
+# Input Model
+class MarketGapAnalystRequest(BaseModel):
+    company_profile: Dict[str,Any]
+    competitor_list: List[Dict[str,Any]]
+    market_stats: Dict[str,Any]
 
 # Output Model
 class MarketGapAnalystResponse(BaseModel):
@@ -24,7 +23,7 @@ class MarketGapAnalystResponse(BaseModel):
     raw_response: Optional[str] = None
 
 @router.post("/", response_model=MarketGapAnalystResponse)
-async def analyze_industry_opportunities(request: MarketGapAnalystRequest) -> MarketGapAnalystResponse:
+async def analyze_market_gaps(request: MarketGapAnalystRequest) -> MarketGapAnalystResponse:
     """
     Analyze a company profile, competitor list and market stats to give market gaps.
     
@@ -35,10 +34,10 @@ async def analyze_industry_opportunities(request: MarketGapAnalystRequest) -> Ma
         Response containing success status and market gap analysis data or error
     """
     # Convert request to dict for validation
-    company_data = request.model_dump()
+    incoming_data_dict = request.model_dump()
     
     # Validate input
-    input_validation = validator.validate_input(company_data)
+    input_validation = validator.validate_input(incoming_data_dict)
     if not input_validation["valid"]:
         return MarketGapAnalystResponse(
             success=False,
