@@ -1,0 +1,81 @@
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import Dict, Any, List, Optional
+from src.agents.market_gap_agent import run_market_gap_analysis_agent
+from src.utils.validation import MarketGapAnalystValidator, Company, 
+
+router = APIRouter()
+
+# Initialize validator
+validator = MarketGapAnalystValidator()
+
+# Input Model : Because, this can be imported from `validation.py`
+# Why ? since, the 'MarketGapAnalystInput' model is a hybrid of other models.
+# class MarketGapAnalystRequest(BaseModel):
+#     company_profile: Company
+#     competitor_list: List[str]
+#     market_stats: 
+
+# Output Model
+class MarketGapAnalystResponse(BaseModel):
+    success: bool
+    data: Optional[List[Dict[str, Any]]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
+
+@router.post("/", response_model=MarketGapAnalystResponse)
+async def analyze_industry_opportunities(request: MarketGapAnalystRequest) -> MarketGapAnalystResponse:
+    """
+    Analyze a company profile, competitor list and market stats to give market gaps.
+    
+    Args:
+        Request: Company profile, Competitor list, Market stats
+        
+    Returns:
+        Response containing success status and market gap analysis data or error
+    """
+    # Convert request to dict for validation
+    company_data = request.model_dump()
+    
+    # Validate input
+    input_validation = validator.validate_input(company_data)
+    if not input_validation["valid"]:
+        return MarketGapAnalystResponse(
+            success=False,
+            error=f"Invalid input data: {input_validation['error']}"
+        )
+    
+    # Run the market gap analyst agent
+    result = run_market_gap_analysis_agent(input_validation["data"])
+    
+    if not result["success"]:
+        return MarketGapAnalystResponse(
+            success=False,
+            error=result['error'],
+            raw_response=result.get("raw_response")
+        )
+    
+    # Validate output
+    output_validation = validator.validate_output(result["data"])
+    if not output_validation["valid"]:
+        return MarketGapAnalystResponse(
+            success=False,
+            error=output_validation['error'],
+            raw_response=result.get("raw_response")
+        )
+    
+    return MarketGapAnalystResponse(
+        success=True,
+        data=output_validation["data"],
+        raw_response=result.get("raw_response")
+    )
+
+@router.get("/schema/input")
+async def get_input_schema() -> Dict[str, Any]:
+    """Get the input schema for industry analysis"""
+    return validator.get_input_schema()
+
+@router.get("/schema/output")
+async def get_output_schema() -> Dict[str, Any]:
+    """Get the output schema for industry analysis"""
+    return validator.get_output_schema()

@@ -23,6 +23,17 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
+class MarketGapAnalystOutput(BaseModel):
+    gap: str
+    impact: str
+    evidance: str
+    sources: str
+
+class MarketGapAnalystInput(BaseModel):
+    company_profile: Company
+    competitor_list: List[CompetitiveLandScape]
+    market_stats: Dict[str,Any]
+
 class BaseValidator:
     """Base validator class with common validation methods"""
     
@@ -200,4 +211,59 @@ class CompetitiveLandscapeValidator:
         return {
             "type": "array",
             "items": CompetitiveLandscape.model_json_schema()
+        }
+
+class MarketGapAnalystValidator:
+    """Validator for Market Gap Analyst Agent input and output"""
+    
+    def __init__(self):
+        # self.input_validator = BaseValidator(...)
+        self.output_model = List[MarketGapAnalyst]
+        
+    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate input data"""
+        pass
+    
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate market gap analysis output against the expected schema.
+        
+        Args:
+            data: list of dict of general company stats.
+            
+        Returns:
+            Dict with validation results
+        """
+        try:
+            validated_market_gaps = [MarketGapAnalyst.model_validate(item) for item in data]
+            
+            return {
+                "valid": True,
+                "data": [i.model_dump() for i in validated_market_gaps],
+                "error": None
+            }
+            
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+    
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the input model"""
+        pass
+    
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output MarketGapAnalyst response list"""
+        return {
+            "type": "array",
+            "items": MarketGapAnalyst.model_json_schema()
         }

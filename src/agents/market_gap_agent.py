@@ -67,7 +67,7 @@ Example output format:
     
     return agent
 
-def run_market_gap_analysis_agent() -> List[Dict[str,Any]]:
+def run_market_gap_analysis_agent(company_stats: Dict[str,Any]) -> Dict[str,Any]:
     """
     Run the company research agent for a given company name.
     
@@ -82,9 +82,18 @@ def run_market_gap_analysis_agent() -> List[Dict[str,Any]]:
     try:
         agent = create_market_gap_analysis_agent()
         
+        company_profile = company_stats.get('company_profile','')
+        competitor_list = company_stats.get('competitor_list')
+        market_stats = company_stats.get('market_stats')
+        
+        user_message = f"""
+        
+        Based on the profile for '{{ company_profile }}', the provided list of {{ competitor_list|length }} competitors, and {{ market_stats|length }} market stats, generate a JSON array of all identified market gaps.
+
+        """
         response = agent.run(
             messages=[
-                ChatMessage.from_user(text=f"To fill in..."),
+                ChatMessage.from_user(text=user_message),
             ]
         )
         
