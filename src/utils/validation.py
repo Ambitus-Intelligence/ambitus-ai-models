@@ -23,10 +23,16 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
+class MarketData(BaseModel):
+    market_size_usd: float
+    CAGR: float
+    key_drivers: List[str]
+    sources: List[str]
+
 class MarketGapAnalystInput(BaseModel):
-    company_profile: Dict[str,Any]
-    competitor_list: List[Dict[str,Any]]
-    market_stats: Dict[str,Any]
+    company_profile: Company
+    competitor_list: List[CompetitiveLandscape]
+    market_stats: MarketData
 
 class MarketGapAnalystOutput(BaseModel):
     gap: str

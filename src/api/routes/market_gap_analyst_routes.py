@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from src.agents.market_gap_agent import run_market_gap_analysis_agent
-from src.utils.validation import MarketGapAnalystValidator
+from src.utils.validation import MarketGapAnalystValidator, MarketGapAnalystInput
 
 router = APIRouter()
 
@@ -10,10 +10,7 @@ router = APIRouter()
 validator = MarketGapAnalystValidator()
 
 # Input Model
-class MarketGapAnalystRequest(BaseModel):
-    company_profile: Dict[str,Any]
-    competitor_list: List[Dict[str,Any]]
-    market_stats: Dict[str,Any]
+# being a hybrid model, import directly from validation module.
 
 # Output Model
 class MarketGapAnalystResponse(BaseModel):
@@ -23,7 +20,7 @@ class MarketGapAnalystResponse(BaseModel):
     raw_response: Optional[str] = None
 
 @router.post("/", response_model=MarketGapAnalystResponse)
-async def analyze_market_gaps(request: MarketGapAnalystRequest) -> MarketGapAnalystResponse:
+async def analyze_market_gaps(request: MarketGapAnalystInput) -> MarketGapAnalystResponse:
     """
     Analyze a company profile, competitor list and market stats to give market gaps.
     
