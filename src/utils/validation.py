@@ -37,8 +37,8 @@ class MarketGapAnalystInput(BaseModel):
 class MarketGapAnalystOutput(BaseModel):
     gap: str
     impact: str
-    evidance: str
-    sources: str
+    evidence: str
+    source: List[str]
 
 
 class BaseValidator:
