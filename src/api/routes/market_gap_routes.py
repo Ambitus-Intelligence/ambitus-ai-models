@@ -9,9 +9,6 @@ router = APIRouter()
 # Initialize validator
 validator = MarketGapAnalystValidator()
 
-# Input Model
-# being a hybrid model, import directly from validation module.
-
 # Output Model
 class MarketGapAnalystResponse(BaseModel):
     success: bool
