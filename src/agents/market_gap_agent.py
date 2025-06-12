@@ -9,6 +9,7 @@ from haystack.dataclasses import ChatMessage
 from haystack.components.agents import Agent
 from haystack_integrations.tools.mcp import MCPTool, SSEServerInfo
 from haystack.utils import Secret
+from jinja2 import Template
 
 # Load environment variables from .env file
 load_dotenv()
@@ -36,7 +37,7 @@ Follow these guidelines strictly:
    - `source`: List of URLs used to derive the above information.
 
 3. **Be Logical and Evidential**: Do not infer or hallucinate details. Only include data supported by the sources.
-4. **Respond in JSON Only**: No explanation or commentary outside the JSON. Just the structured JSON output.
+4. **Respond in JSON Only**: No explanation or commentary outside the JSON. Just the structured JSON string output, meaning no additional spaces or "\n" added.
 
 Example output format:
 [
@@ -82,15 +83,44 @@ def run_market_gap_analysis_agent(company_stats: Dict[str,Any]) -> Dict[str,Any]
     try:
         agent = create_market_gap_analysis_agent()
         
-        company_profile = company_stats.get('company_profile','')
-        competitor_list = company_stats.get('competitor_list')
-        market_stats = company_stats.get('market_stats')
-        
-        user_message = f"""
-        
-        Based on the profile for '{{ company_profile }}', the provided list of {{ competitor_list|length }} competitors, and {{ market_stats|length }} market stats, generate a JSON array of all identified market gaps.
+        template_str = '''
+        Analyze the following data to identify strategic market gaps. Base your analysis exclusively on this information and respond in the required JSON format.
 
-        """
+        ### Company Profile
+        - **Name:** {{ company_stats['company_profile']['name'] }}
+        - **Industry:** {{ company_stats['company_profile']['industry'] }}
+        - **Description:** {{ company_stats['company_profile']['description'] }}
+        - **Products:**
+        {% for product in company_stats['company_profile']['products'] %}
+        - {{ product }}
+        {% endfor %}
+        - **Headquarters:** {{ company_stats['company_profile']['headquarters'] }}
+        - **Sources:** {{ company_stats['company_profile']['sources'] | join(', ') }}
+
+        ### Competitor Landscape
+        {% for competitor in company_stats['competitor_list'] %}
+        ---
+        - **Competitor:** {{ competitor['competitor'] }}
+        - **Product Focus:** {{ competitor['product'] }}
+        - **Market Share:** {{ competitor['market_share'] }}%
+        - **Note:** {{ competitor['note'] }}
+        - **Sources:** {{ competitor['sources'] | join(', ') }}
+        {% endfor %}
+
+        ### Market Statistics
+        - **Market Size (USD):** {{ company_stats['market_stats']['market_size_usd'] }}
+        - **CAGR:** {{ company_stats['market_stats']['CAGR'] }}%
+        - **Key Drivers:**
+        {% for driver in company_stats['market_stats']['key_drivers'] %}
+        - {{ driver }}
+        {% endfor %}
+        - **Sources:** {{ company_stats['market_stats']['sources'] | join(', ') }}
+
+        Based on this data, identify the market gaps.
+        '''
+        template = Template(template_str)
+        user_message = template.render(company_stats=company_stats)
+        
         response = agent.run(
             messages=[
                 ChatMessage.from_user(text=user_message),
