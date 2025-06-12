@@ -1,5 +1,3 @@
-# Market gap analysis agent
-
 import os
 import json
 from typing import Dict, Any, List
