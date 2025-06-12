@@ -312,32 +312,22 @@ class MarketDataValidator:
     def get_output_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the MarketData model"""
         return self.output_validator.get_schema()
-
-
 class OpportunityAgentValidator:
-    """Validator for Opportunity Agent output"""
+    """Validator for Opportunity Agent input and output"""
 
     def __init__(self):
+        self.input_model = MarketGapAnalystOutput
         self.output_model = Opportunity
 
-    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Validate the Opportunity Agent output list.
-
-        Args:
-            data: List of opportunity dictionaries
-
-        Returns:
-            Dict with validation results
-        """
+    def validate_input(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Validate input for Opportunity Agent (list of market gaps)"""
         try:
-            validated_items = [self.output_model.model_validate(item) for item in data]
+            validated = [self.input_model.model_validate(item) for item in data]
             return {
                 "valid": True,
-                "data": [item.model_dump() for item in validated_items],
+                "data": [item.model_dump() for item in validated],
                 "error": None
             }
-
         except ValidationError as e:
             return {
                 "valid": False,
@@ -345,7 +335,6 @@ class OpportunityAgentValidator:
                 "error": str(e),
                 "error_details": e.errors()
             }
-
         except Exception as e:
             return {
                 "valid": False,
@@ -353,9 +342,37 @@ class OpportunityAgentValidator:
                 "error": f"Unexpected validation error: {str(e)}"
             }
 
-    def get_output_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the output Opportunity list"""
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Validate the Opportunity Agent output"""
+        try:
+            validated = [self.output_model.model_validate(item) for item in data]
+            return {
+                "valid": True,
+                "data": [item.model_dump() for item in validated],
+                "error": None
+            }
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+
+    def get_input_schema(self) -> Dict[str, Any]:
         return {
             "type": "array",
-            "items": Opportunity.model_json_schema()
+            "items": self.input_model.model_json_schema()
+        }
+
+    def get_output_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "array",
+            "items": self.output_model.model_json_schema()
         }

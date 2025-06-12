@@ -1,80 +1,69 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any, List, Optional
+
 from src.agents.opportunity_agent import run_opportunity_agent
 from src.utils.validation import OpportunityAgentValidator
 
-# FastAPI router
 router = APIRouter()
-opportunity_validator = OpportunityAgentValidator()
+validator = OpportunityAgentValidator()
 
-# Input schema
-class OpportunityAgentRequest(BaseModel):
-    market_gaps: List[str]
+# Response model
+class OpportunityAgentResponse(BaseModel):
+    success: bool
+    data: Optional[List[Dict[str, Any]]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
 
-# Output schema
-class Opportunity(BaseModel):
-    title: str
-    priority: str
-    description: str
-    sources: List[str]
-
-# POST endpoint
-@router.post("/", response_model=List[Opportunity])
-async def opportunity_agent_endpoint(request_data: OpportunityAgentRequest):
+@router.post("/", response_model=OpportunityAgentResponse)
+async def opportunity_agent_endpoint(request: List[Dict[str, Any]]) -> OpportunityAgentResponse:
     """
     Generate and rank growth opportunities based on market gaps.
-    Returns a list of opportunity objects.
+    
+    Args:
+        request: List of market gaps (output of market gap analysis)
+
+    Returns:
+        Response with list of growth opportunities or error
     """
-    try:
-        result = run_opportunity_agent(request_data.dict())
+    # Validate input
+    input_validation = validator.validate_input(request)
+    if not input_validation["valid"]:
+        return OpportunityAgentResponse(
+            success=False,
+            error=input_validation["error"]
+        )
+    
+    # Run the agent
+    result = run_opportunity_agent(input_validation["data"])
+    if not result["success"]:
+        return OpportunityAgentResponse(
+            success=False,
+            error=result["error"],
+            raw_response=result.get("raw_response")
+        )
 
-        if not result["success"]:
-            raise HTTPException(status_code=400, detail=result["error"])
+    # Validate output
+    output_validation = validator.validate_output(result["data"])
+    if not output_validation["valid"]:
+        return OpportunityAgentResponse(
+            success=False,
+            error=output_validation["error"],
+            raw_response=result.get("raw_response")
+        )
 
-        validation = opportunity_validator.validate_output(result["data"])
+    return OpportunityAgentResponse(
+        success=True,
+        data=output_validation["data"],
+        raw_response=result.get("raw_response")
+    )
 
-        if not validation["valid"]:
-            raise HTTPException(status_code=422, detail=validation["error"])
-
-        return validation["data"]
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Input schema endpoint
 @router.get("/schema/input")
 async def get_opportunity_input_schema() -> Dict[str, Any]:
-    """Return input schema for Opportunity Agent"""
-    return {
-        "type": "object",
-        "properties": {
-            "market_gaps": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "List of identified market gaps"
-            }
-        },
-        "required": ["market_gaps"]
-    }
+    """Get the input schema for Opportunity Agent"""
+    return validator.get_input_schema()
 
-# Output schema endpoint
 @router.get("/schema/output")
 async def get_opportunity_output_schema() -> Dict[str, Any]:
-    """Return output schema for Opportunity Agent"""
-    return {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "title": {"type": "string"},
-                "priority": {"type": "string"},
-                "description": {"type": "string"},
-                "sources": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["title", "priority", "description", "sources"]
-        }
-    }
+    """Get the output schema for Opportunity Agent"""
+    return validator.get_output_schema()
