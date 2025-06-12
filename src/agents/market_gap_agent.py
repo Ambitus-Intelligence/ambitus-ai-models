@@ -40,12 +40,12 @@ def create_market_gap_analysis_agent():
     4. **Respond in JSON Only**: No explanation or commentary outside the JSON. Just the structured JSON output.
 
     Example output format:
-    {
+    [{
         "gap": "Lack of an entry-level pricing tier for small businesses.",
         "impact": "High",
         "evidence": "Market statistics indicate that 45 percentage of the target market consists of small businesses with fewer than 10 employees. All listed competitors offer a dedicated 'Basic' or 'Starter' plan, while the company's lowest-priced product is targeted at mid-market clients.",
         "source": "Market Stats Report, Competitor List"
-    }
+    }]
     """
 
     # Create the agent
