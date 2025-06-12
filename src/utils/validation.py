@@ -23,12 +23,22 @@ class CompetitiveLandscape(BaseModel):
     note: str
     sources: List[str]
 
-# Remove the old MarketSize, GrowthRate, MarketTrend models and replace MarketData
 class MarketData(BaseModel):
     market_size_usd: float
     CAGR: float
     key_drivers: List[str]
     sources: List[str]
+
+class MarketGapAnalystInput(BaseModel):
+    company_profile: Company
+    competitor_list: List[CompetitiveLandscape]
+    market_stats: MarketData
+
+class MarketGapAnalystOutput(BaseModel):
+    gap: str
+    impact: str
+    evidence: str
+    source: List[str]
 
 class Opportunity(BaseModel):
     title: str
@@ -214,6 +224,61 @@ class CompetitiveLandscapeValidator:
             "type": "array",
             "items": CompetitiveLandscape.model_json_schema()
         }
+
+class MarketGapAnalystValidator:
+    """Validator for Market Gap Analyst Agent input and output"""
+    
+    def __init__(self):
+        self.input_validator = BaseValidator(MarketGapAnalystInput)
+        self.output_model = List[MarketGapAnalystOutput]
+        
+    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate market gap analyst input model."""
+        return self.input_validator.validate(data)
+    
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate market gap analysis output against the expected schema.
+        
+        Args:
+            data: list of dict of general company stats.
+        Returns:
+            Dict with validation results
+        """
+        try:
+            validated_market_gaps = [MarketGapAnalystOutput.model_validate(item) for item in data]
+            
+            return {
+                "valid": True,
+                "data": [i.model_dump() for i in validated_market_gaps],
+                "error": None
+            }
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+    
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the input MarketGapAnalyst input model."""
+        return self.input_validator.get_schema()
+    
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output MarketGapAnalyst response list."""
+        return {
+            "type": "array",
+            "items": MarketGapAnalystOutput.model_json_schema()  
+          }
+
 class MarketDataValidator:
     """Validator for Market Data Agent output"""
 
@@ -228,7 +293,7 @@ class MarketDataValidator:
             data: Dictionary containing market data
         
         Returns:
-            Dict with validation results
+              Dict with validation results
         """
         return self.output_validator.validate(data)
 
