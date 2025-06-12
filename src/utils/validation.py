@@ -40,6 +40,11 @@ class MarketGapAnalystOutput(BaseModel):
     evidence: str
     source: List[str]
 
+class Opportunity(BaseModel):
+    title: str
+    priority: str  
+    description: str
+    sources: List[str]
 
 class BaseValidator:
     """Base validator class with common validation methods"""
@@ -237,7 +242,6 @@ class MarketGapAnalystValidator:
         
         Args:
             data: list of dict of general company stats.
-            
         Returns:
             Dict with validation results
         """
@@ -249,7 +253,6 @@ class MarketGapAnalystValidator:
                 "data": [i.model_dump() for i in validated_market_gaps],
                 "error": None
             }
-            
         except ValidationError as e:
             return {
                 "valid": False,
@@ -257,6 +260,7 @@ class MarketGapAnalystValidator:
                 "error": str(e),
                 "error_details": e.errors()
             }
+
         except Exception as e:
             return {
                 "valid": False,
@@ -272,5 +276,86 @@ class MarketGapAnalystValidator:
         """Get the JSON schema for the output MarketGapAnalyst response list."""
         return {
             "type": "array",
-            "items": MarketGapAnalystOutput.model_json_schema()
+            "items": MarketGapAnalystOutput.model_json_schema()  
+          }
+
+class MarketDataValidator:
+    """Validator for Market Data Agent output"""
+
+    def __init__(self):
+        self.output_validator = BaseValidator(MarketData)
+
+    def validate_output(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Validate the Market Data Agent output.
+        
+        Args:
+            data: Dictionary containing market data
+        
+        Returns:
+              Dict with validation results
+        """
+        return self.output_validator.validate(data)
+
+    def validate_output_json(self, json_string: str) -> Dict[str, Any]:
+        """
+        Validate Market Data Agent output from a JSON string.
+
+        Args:
+            json_string: Market data as a JSON string
+
+        Returns:
+            Dict with validation results
+        """
+        return self.output_validator.validate_json_string(json_string)
+
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the MarketData model"""
+        return self.output_validator.get_schema()
+
+
+class OpportunityAgentValidator:
+    """Validator for Opportunity Agent output"""
+
+    def __init__(self):
+        self.output_model = Opportunity
+
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Validate the Opportunity Agent output list.
+
+        Args:
+            data: List of opportunity dictionaries
+
+        Returns:
+            Dict with validation results
+        """
+        try:
+            validated_items = [self.output_model.model_validate(item) for item in data]
+            return {
+                "valid": True,
+                "data": [item.model_dump() for item in validated_items],
+                "error": None
+            }
+
+        except ValidationError as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": str(e),
+                "error_details": e.errors()
+            }
+
+        except Exception as e:
+            return {
+                "valid": False,
+                "data": None,
+                "error": f"Unexpected validation error: {str(e)}"
+            }
+
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output Opportunity list"""
+        return {
+            "type": "array",
+            "items": Opportunity.model_json_schema()
         }
