@@ -18,7 +18,7 @@ class MarketDataResponse(BaseModel):
     error: Optional[str] = None
     raw_response: Optional[str] = None
 
-@router.post("/", response_model=MarketDataResponse, tags=["Market Data"])
+@router.post("/", response_model=MarketDataResponse, tags=["market_data"])
 async def fetch_market_data(request: MarketDataRequest) -> MarketDataResponse:
     """
     Fetch market data for a given domain using the Market Data Agent.
@@ -52,7 +52,7 @@ async def fetch_market_data(request: MarketDataRequest) -> MarketDataResponse:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/schema/input", tags=["Market Data"])
+@router.get("/schema/input", tags=["market_data"])
 async def get_market_data_input_schema() -> Dict[str, Any]:
     """Return input schema for Market Data Agent"""
     return {
@@ -67,7 +67,7 @@ async def get_market_data_input_schema() -> Dict[str, Any]:
     }
 
 
-@router.get("/schema/output", tags=["Market Data"])
+@router.get("/schema/output", tags=["market_data"])
 async def get_market_data_output_schema() -> Dict[str, Any]:
     """Return output schema for Market Data Agent"""
     return market_data_validator.get_output_schema()
