@@ -33,7 +33,7 @@ Instructions:
    - "description": 1–3 sentences on the value proposition and business logic
    - "sources": list of supporting evidence or links (real or from provided context)
 
-Respond **only** with a JSON array in the format:
+Respond **only** with raw JSON (no markdown formatting, no explanation) in the format:
 [
   {
     "title": "Launch AI Chatbot",
@@ -64,7 +64,7 @@ def run_opportunity_agent(input_data: Dict[str, Any]) -> Dict[str, Any]:
     Generate realistic, search-validated business opportunities from market gaps.
     """
     try:
-        market_gaps = input_data.get("market_gaps")
+        market_gaps = input_data
         if not market_gaps or not isinstance(market_gaps, list):
             return {
                 "success": False,
