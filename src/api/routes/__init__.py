@@ -5,6 +5,7 @@ from .competitive_landscape_routes import router as competitive_landscape_router
 from .market_gap_routes import router as market_gap_analyst_router
 from .market_data_routes import router as market_data_router
 from .opportunity_routes import router as opportunity_router
+from .report_synthesis_routes import router as report_synthesis_router
 
 # Main router that combines all sub-routers
 api_router = APIRouter()
@@ -16,3 +17,4 @@ api_router.include_router(competitive_landscape_router, prefix="/competitive-lan
 api_router.include_router(market_gap_analyst_router, prefix="/market-gap-analysis", tags=["market_gap_analysis"])
 api_router.include_router(market_data_router, prefix="/market-data", tags=["market_data"])
 api_router.include_router(opportunity_router, prefix="/opportunity", tags=["opportunity"])
+api_router.include_router(report_synthesis_router, prefix="/report-synthesis", tags=["report_synthesis"])
