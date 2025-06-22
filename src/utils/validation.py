@@ -22,7 +22,8 @@ class CompetitiveLandscape(BaseModel):
     market_share: float
     note: str
     sources: List[str]
-
+class MarketDataInput(BaseModel):
+    domain: str
 class MarketData(BaseModel):
     market_size_usd: float
     CAGR: float
@@ -280,38 +281,28 @@ class MarketGapAnalystValidator:
           }
 
 class MarketDataValidator:
-    """Validator for Market Data Agent output"""
+    """Validator for Market Data Agent input and output."""
 
     def __init__(self):
+        self.input_validator = BaseValidator(MarketDataInput)
         self.output_validator = BaseValidator(MarketData)
 
+    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate Market Data Agent input (domain string wrapped in dict)."""
+        return self.input_validator.validate(data)
+
     def validate_output(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate the Market Data Agent output.
-        
-        Args:
-            data: Dictionary containing market data
-        
-        Returns:
-              Dict with validation results
-        """
+        """Validate Market Data Agent output (market data dictionary)."""
         return self.output_validator.validate(data)
 
-    def validate_output_json(self, json_string: str) -> Dict[str, Any]:
-        """
-        Validate Market Data Agent output from a JSON string.
-
-        Args:
-            json_string: Market data as a JSON string
-
-        Returns:
-            Dict with validation results
-        """
-        return self.output_validator.validate_json_string(json_string)
+    def get_input_schema(self) -> Dict[str, Any]:
+        """Return input schema for market data."""
+        return MarketDataInput.model_json_schema()
 
     def get_output_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the MarketData model"""
-        return self.output_validator.get_schema()
+        """Return output schema for market data."""
+        return MarketData.model_json_schema()
+
 class OpportunityAgentValidator:
     """Validator for Opportunity Agent input and output"""
 
