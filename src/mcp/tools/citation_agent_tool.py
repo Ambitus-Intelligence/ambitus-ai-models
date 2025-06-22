@@ -19,6 +19,9 @@ from haystack.components.tools import ToolInvoker
 from haystack.tools import Tool
 from haystack.tools import ComponentTool
 
+# Importing the 'search_tool' module's Haystack Pipeline Implementation
+from .search_tool import search_pipe
+
 
 
 
@@ -56,21 +59,6 @@ def citation_agent(claim: str, context: str) -> dict[str, Any]:
                 sources.append(f"Source {idx}: {url}")
                 information.append(f"Information {idx}: {doc.content}")
             return {"sources": sources, "information": information}
-        
-
-    # Search Pipeline
-    search_pipe = Pipeline()
-
-    search_pipe.add_component("search", DuckduckgoApiWebSearch(top_k=3, backend="auto"))
-    search_pipe.add_component("fetcher", LinkContentFetcher(timeout=3, raise_on_failure=False, retry_attempts=2))
-    search_pipe.add_component("converter", MultiFileConverter())
-    search_pipe.add_component("formatter", DocumentFormatter())
-
-    search_pipe.connect("search.links", "fetcher.urls")
-    search_pipe.connect("fetcher.streams", "converter.sources")
-    search_pipe.connect("converter.documents", "formatter.documents")
-
-
 
     search_pipe_component = SuperComponent(
         pipeline=search_pipe
@@ -102,49 +90,81 @@ def citation_agent(claim: str, context: str) -> dict[str, Any]:
 
     # Prompting the Agent
     system_prompt = """
-    You'll be given two strings, 1. claim , 2. context.
-    You have to verify whether the claim is valid based on the context.
-    And, return the response in output format only.
-    ---
-    Input format:
+    You are a citation-checking assistant. Given a "claim" and a "context", verify whether the claim is supported by the context or by external sources. Return exactly this format:
+
     {
-      "claim":      { "type": "string", "description": "Statement to be verified" },
-      "context":    { "type": "string", "description": "Supplementary text or background" },
+      "claim_valid": <true|false>,
+      "citations": [
+        {
+          "title": <string>,
+          "url": <string>,
+          "snippet": <excerpt supporting or refuting the claim>
+        },
+        ... zero or more items
+      ]
     }
-    ---
-    Output format:
-    {
-      "claim_valid": { "type": "boolean", "description": "True if at least one citation supports the claim" },
-      "citations": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "title":   { "type": "string", "description": "Page or article title" },
-            "url":     { "type": "string", "description": "Source URL" },
-            "snippet": { "type": "string", "description": "Excerpt showing the claim support" }
-          },
-          "required": ["url", "snippet"]
-        }
-      },
-    }
-    ---
+
+    ### Example 1 (Generic, True)
     Sample Input:
     {
-      "claim": "Blinkit offers 10‑minute grocery delivery in Mumbai.",
-      "context": "Blinkit operates in 25 Indian cities including Mumbai, Delhi, Bangalore. It promises grocery delivery within 10 minutes of order placement in major metros."
+      "claim": "Paris is the capital of France.",
+      "context": "France is a country in Europe; its capital city is Paris."
     }
+    ---
     Sample Output:
     {
       "claim_valid": true,
       "citations": [
         {
-          "title": "Blinkit operates in 25 Indian cities including Mumbai, Delhi, Bangalore",
-          "url": "https://example.com/article",
-          "snippet": "It promises grocery delivery within 10 minutes of order placement in major metros."
+          "title": "France capital city information",
+          "url": "https://example.com/france",
+          "snippet": "France's capital is Paris."
         }
       ]
     }
+
+    ### Example 2 (Generic, False)
+    Sample Input:
+    {
+      "claim": "Mount Everest is the tallest mountain in Africa.",
+      "context": "Mount Everest is the highest mountain above sea level, located in the Himalayas in Asia."
+    }
+    ---
+    Sample Output:
+    {
+      "claim_valid": false,
+      "citations": [
+        {
+          "title": "Mount Everest location and height",
+          "url": "https://example.com/everest",
+          "snippet": "Mount Everest is located in the Himalayas, in Asia, and is not in Africa."
+        }
+      ]
+    }
+
+    ### Example 3 (Domain: Quick-Commerce, True)
+    Sample Input:
+    {
+      "claim": "Swiggy Instamart delivery is free only for Swiggy One members.",
+      "context": "Currently, free delivery on Instamart is available exclusively to users subscribed to Swiggy One; all other users are charged per-order delivery fees."
+    }
+    ---
+    Sample Output:
+    {
+      "claim_valid": true,
+      "citations": [
+        {
+          "title": "Swiggy Instamart pricing",
+          "url": "https://example.com/swiggy",
+          "snippet": "delivery is free only for Swiggy One users; others have to pay a fee."
+        }
+      ]
+    }
+
+    ### Now please verify:
+    Sample Input:
+    { "claim": "...", "context": "..." }
+
     """
 
     sys = ChatMessage.from_system(system_prompt)
@@ -165,8 +185,10 @@ def citation_agent(claim: str, context: str) -> dict[str, Any]:
         }
 
 # Configuring function metadata for FastMCP
-citation_agent.__name__ = "citation_agent_tool"
-citation_agent.__doc__ = "Generate a citation for a given claim against a provided context."
+citation_agent.__name__ = "claim_context_based_citation_tool"
+citation_agent.__doc__ = "Does a web search, extract necessary information and return a formatted citation for a given claim-context pair."
+citation_agent.connection_timeout = 60
+citation_agent.invocation_timeout = 60
 
 
 
