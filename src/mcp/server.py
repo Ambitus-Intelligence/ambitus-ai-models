@@ -1,6 +1,7 @@
 from fastmcp import FastMCP
 from tools.ping_tool import ping_tool
 from tools.search_tool import search_tool
+from tools.citation_agent_tool import citation_agent
 from fastapi import Request
 from fastapi.responses import PlainTextResponse
 
@@ -11,6 +12,8 @@ mcp = FastMCP("ambitus-tools-mcp")
 mcp.add_tool(ping_tool)
 # Register the search tool function
 mcp.add_tool(search_tool)
+# Register the citation agent tool function
+mcp.add_tool(citation_agent)
 
 @mcp.custom_route("/health", methods=["GET"])
 async def health_check(request: Request) -> PlainTextResponse:
