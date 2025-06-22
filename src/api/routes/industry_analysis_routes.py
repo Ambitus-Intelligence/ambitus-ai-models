@@ -1,19 +1,13 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from src.agents.industry_analysis_agent import run_industry_analysis_agent
-from src.utils.validation import IndustryAnalysisValidator, Company
+from src.utils.validation import IndustryAnalysisValidator
+from src.utils.models import Company, IndustryAnalysisResponse
 
 router = APIRouter()
 
 # Initialize validator
 validator = IndustryAnalysisValidator()
-
-class IndustryAnalysisResponse(BaseModel):
-    success: bool
-    data: Optional[List[Dict[str, Any]]] = None
-    error: Optional[str] = None
-    raw_response: Optional[str] = None
 
 @router.post("/", response_model=IndustryAnalysisResponse)
 async def analyze_industry_opportunities(request: Company) -> IndustryAnalysisResponse:

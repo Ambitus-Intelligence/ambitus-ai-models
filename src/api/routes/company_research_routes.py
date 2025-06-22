@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from src.agents.company_research_agent import run_company_research_agent
 from src.utils.validation import CompanyValidator
 from src.utils.mcp_manager import MCPServerManager
+from src.utils.models import CompanyResearchRequest, CompanyResponse
 
 router = APIRouter()
 
@@ -11,17 +11,8 @@ router = APIRouter()
 company_validator = CompanyValidator()
 mcp_manager = MCPServerManager()
 
-class CompanyResearchRequest(BaseModel):
-    company_name: str
-
-class CompanyResearchResponse(BaseModel):
-    success: bool
-    data: Optional[dict] = None
-    error: Optional[str] = None
-    raw_response: Optional[str] = None
-
-@router.post("/", response_model=CompanyResearchResponse)
-async def research_company(request: CompanyResearchRequest):
+@router.post("/", response_model=CompanyResponse)
+async def research_company(request: CompanyResearchRequest) -> CompanyResponse:
     """
     Research a company using the CompanyResearchAgent.
     Automatically ensures MCP server is running.
@@ -38,7 +29,7 @@ async def research_company(request: CompanyResearchRequest):
     agent_result = run_company_research_agent(request.company_name)
     
     if not agent_result["success"]:
-        return CompanyResearchResponse(
+        return CompanyResponse(
             success=False,
             error=agent_result["error"],
             raw_response=agent_result.get("raw_response")
@@ -48,13 +39,13 @@ async def research_company(request: CompanyResearchRequest):
     validation_result = company_validator.validate(agent_result["data"])
     
     if not validation_result["valid"]:
-        return CompanyResearchResponse(
+        return CompanyResponse(
             success=False,
             error=validation_result['error'],
             raw_response=agent_result.get("raw_response")
         )
     
-    return CompanyResearchResponse(
+    return CompanyResponse(
         success=True,
         data=validation_result["data"],
         raw_response=agent_result.get("raw_response")

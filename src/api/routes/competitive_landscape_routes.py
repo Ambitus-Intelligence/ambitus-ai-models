@@ -1,21 +1,15 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any
 from src.agents.competitive_landscape_agent import run_competitive_landscape_agent
-from src.utils.validation import CompetitiveLandscapeValidator, IndustryOpportunity
+from src.utils.validation import CompetitiveLandscapeValidator
 from src.utils.mcp_manager import MCPServerManager
+from src.utils.models import IndustryOpportunity, CompetitiveLandscapeResponse
 
 router = APIRouter()
 
 # Initialize utilities
 competitive_landscape_validator = CompetitiveLandscapeValidator()
 mcp_manager = MCPServerManager()
-
-class CompetitiveLandscapeResponse(BaseModel):
-    success: bool
-    data: Optional[list] = None
-    error: Optional[str] = None
-    raw_response: Optional[str] = None
 
 @router.post("/", response_model=CompetitiveLandscapeResponse)
 async def analyze_competitive_landscape(request: IndustryOpportunity) -> CompetitiveLandscapeResponse:

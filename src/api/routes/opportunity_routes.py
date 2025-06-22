@@ -1,31 +1,23 @@
 from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
-
-from src.agents.opportunity_agent import run_opportunity_agent
-from src.utils.validation import OpportunityAgentValidator
-from src.utils.validation import MarketGapAnalystOutput, Opportunity
+from typing import Dict, Any, List
 import json
 
-router = APIRouter()
-validator = OpportunityAgentValidator()
+from src.agents.opportunity_agent import run_opportunity_agent
+from src.utils.validation import OpportunityValidator
+from src.utils.models import MarketGap, OpportunityResponse
 
-# -------------------- MODELS --------------------
-class OpportunityAgentResponse(BaseModel):
-    success: bool
-    data: Optional[List[Opportunity]] = None
-    error: Optional[str] = None
-    raw_response: Optional[str] = None
+router = APIRouter()
+validator = OpportunityValidator()
 
 # -------------------- POST ENDPOINT --------------------
 
-@router.post("/", response_model=OpportunityAgentResponse)
-async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> OpportunityAgentResponse:
+@router.post("/", response_model=OpportunityResponse)
+async def opportunity_agent_endpoint(request: List[MarketGap]) -> OpportunityResponse:
     """
     Generate and rank growth opportunities based on market gaps.
 
     Args:
-        request: List of validated MarketGapAnalystOutput objects
+        request: List of validated MarketGap objects
 
     Returns:
         Structured opportunity list or error details
@@ -35,7 +27,7 @@ async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> O
     # Validate input
     input_validation = validator.validate_input(input_list)
     if not input_validation["valid"]:
-        return OpportunityAgentResponse(
+        return OpportunityResponse(
             success=False,
             error=input_validation["error"]
         )
@@ -46,7 +38,7 @@ async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> O
 
         # Ensure result is a dict with success flag and data list
         if not isinstance(result, dict) or not result.get("success") or not isinstance(result.get("data"), list):
-            return OpportunityAgentResponse(
+            return OpportunityResponse(
                 success=False,
                 error="Agent returned an unexpected response format (expected a dict with a list under 'data').",
                 raw_response=json.dumps(result)
@@ -55,20 +47,20 @@ async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> O
         # Validate output
         output_validation = validator.validate_output(result["data"])
         if not output_validation["valid"]:
-            return OpportunityAgentResponse(
+            return OpportunityResponse(
                 success=False,
                 error=output_validation["error"],
                 raw_response=result.get("raw_response")
             )
 
-        return OpportunityAgentResponse(
+        return OpportunityResponse(
             success=True,
             data=output_validation["data"],
             raw_response=result.get("raw_response")
         )
 
     except Exception as e:
-        return OpportunityAgentResponse(
+        return OpportunityResponse(
             success=False,
             error=f"Unhandled exception in agent execution: {str(e)}"
         )

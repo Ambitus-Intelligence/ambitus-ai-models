@@ -1,56 +1,18 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Type
 from pydantic import BaseModel, ValidationError
 import json
 
-class Company(BaseModel):
-    name: str
-    industry: str
-    description: str
-    products: List[str]
-    headquarters: str
-    sources: List[str]
+from src.utils.models import (
+    Company, IndustryOpportunity, CompetitiveLandscape, 
+    MarketData, MarketGap, Opportunity, MarketDataRequest, 
+    MarketGapAnalysisRequest
+)
 
-class IndustryOpportunity(BaseModel):
-    domain: str
-    score: float
-    rationale: str
-    sources: List[str]
-
-class CompetitiveLandscape(BaseModel):
-    competitor: str
-    product: str
-    market_share: float
-    note: str
-    sources: List[str]
-class MarketDataInput(BaseModel):
-    domain: str
-class MarketData(BaseModel):
-    market_size_usd: float
-    CAGR: float
-    key_drivers: List[str]
-    sources: List[str]
-
-class MarketGapAnalystInput(BaseModel):
-    company_profile: Company
-    competitor_list: List[CompetitiveLandscape]
-    market_stats: MarketData
-
-class MarketGapAnalystOutput(BaseModel):
-    gap: str
-    impact: str
-    evidence: str
-    source: List[str]
-
-class Opportunity(BaseModel):
-    title: str
-    priority: str  
-    description: str
-    sources: List[str]
 
 class BaseValidator:
     """Base validator class with common validation methods"""
     
-    def __init__(self, model: BaseModel):
+    def __init__(self, model: Type[BaseModel]):
         self.model = model
     
     def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -110,39 +72,36 @@ class BaseValidator:
         """Get the JSON schema for the model"""
         return self.model.model_json_schema()
 
-class CompanyValidator(BaseValidator):
-    """Validator for Company Research Agent output"""
-    
-    def __init__(self):
-        super().__init__(Company)
 
-class IndustryAnalysisValidator:
-    """Validator for Industry Analysis Agent input and output"""
+class ListValidator:
+    """Base validator for list-based outputs"""
     
-    def __init__(self):
-        self.input_validator = BaseValidator(Company)
-        self.output_model = List[IndustryOpportunity]
-        
-    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate input company data"""
-        return self.input_validator.validate(data)
+    def __init__(self, item_model: Type[BaseModel]):
+        self.item_model = item_model
     
     def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
-        Validate industry analysis output against the expected schema.
+        Validate list output against the expected schema.
         
         Args:
-            data: List of industry opportunities
+            data: List of items to validate
             
         Returns:
             Dict with validation results
         """
         try:
-            validated_opportunities = [IndustryOpportunity.model_validate(item) for item in data]
+            if not isinstance(data, list):
+                return {
+                    "valid": False,
+                    "data": None,
+                    "error": f"Expected list but got {type(data).__name__}"
+                }
+                
+            validated_items = [self.item_model.model_validate(item) for item in data]
             
             return {
                 "valid": True,
-                "data": [opp.model_dump() for opp in validated_opportunities],
+                "data": [item.model_dump() for item in validated_items],
                 "error": None
             }
             
@@ -159,6 +118,36 @@ class IndustryAnalysisValidator:
                 "data": None,
                 "error": f"Unexpected validation error: {str(e)}"
             }
+    
+    def get_output_schema(self) -> Dict[str, Any]:
+        """Get the JSON schema for the output list"""
+        return {
+            "type": "array",
+            "items": self.item_model.model_json_schema()
+        }
+
+
+class CompanyValidator(BaseValidator):
+    """Validator for Company Research Agent output"""
+    
+    def __init__(self):
+        super().__init__(Company)
+
+
+class IndustryAnalysisValidator:
+    """Validator for Industry Analysis Agent input and output"""
+    
+    def __init__(self):
+        self.input_validator = BaseValidator(Company)
+        self.output_validator = ListValidator(IndustryOpportunity)
+        
+    def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate input company data"""
+        return self.input_validator.validate(data)
+    
+    def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Validate industry analysis output"""
+        return self.output_validator.validate_output(data)
     
     def get_input_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the input Company model"""
@@ -166,54 +155,23 @@ class IndustryAnalysisValidator:
     
     def get_output_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the output IndustryOpportunity list"""
-        return {
-            "type": "array",
-            "items": IndustryOpportunity.model_json_schema()
-        }
+        return self.output_validator.get_output_schema()
+
 
 class CompetitiveLandscapeValidator:
     """Validator for Competitive Landscape Agent input and output"""
     
     def __init__(self):
         self.input_validator = BaseValidator(IndustryOpportunity)
-        self.output_model = List[CompetitiveLandscape]
+        self.output_validator = ListValidator(CompetitiveLandscape)
         
     def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validate input industry opportunity data"""
         return self.input_validator.validate(data)
     
     def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Validate competitive landscape output against the expected schema.
-        
-        Args:
-            data: List of competitor information
-            
-        Returns:
-            Dict with validation results
-        """
-        try:
-            validated_competitors = [CompetitiveLandscape.model_validate(item) for item in data]
-            
-            return {
-                "valid": True,
-                "data": [comp.model_dump() for comp in validated_competitors],
-                "error": None
-            }
-            
-        except ValidationError as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e),
-                "error_details": e.errors()
-            }
-        except Exception as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Unexpected validation error: {str(e)}"
-            }
+        """Validate competitive landscape output"""
+        return self.output_validator.validate_output(data)
     
     def get_input_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the input IndustryOpportunity model"""
@@ -221,70 +179,38 @@ class CompetitiveLandscapeValidator:
     
     def get_output_schema(self) -> Dict[str, Any]:
         """Get the JSON schema for the output CompetitiveLandscape list"""
-        return {
-            "type": "array",
-            "items": CompetitiveLandscape.model_json_schema()
-        }
+        return self.output_validator.get_output_schema()
 
-class MarketGapAnalystValidator:
-    """Validator for Market Gap Analyst Agent input and output"""
+
+class MarketGapAnalysisValidator:
+    """Validator for Market Gap Analysis Agent input and output"""
     
     def __init__(self):
-        self.input_validator = BaseValidator(MarketGapAnalystInput)
-        self.output_model = List[MarketGapAnalystOutput]
+        self.input_validator = BaseValidator(MarketGapAnalysisRequest)
+        self.output_validator = ListValidator(MarketGap)
         
     def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate market gap analyst input model."""
+        """Validate market gap analysis input model."""
         return self.input_validator.validate(data)
     
     def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Validate market gap analysis output against the expected schema.
-        
-        Args:
-            data: list of dict of general company stats.
-        Returns:
-            Dict with validation results
-        """
-        try:
-            validated_market_gaps = [MarketGapAnalystOutput.model_validate(item) for item in data]
-            
-            return {
-                "valid": True,
-                "data": [i.model_dump() for i in validated_market_gaps],
-                "error": None
-            }
-        except ValidationError as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e),
-                "error_details": e.errors()
-            }
-
-        except Exception as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Unexpected validation error: {str(e)}"
-            }
+        """Validate market gap analysis output"""
+        return self.output_validator.validate_output(data)
     
     def get_input_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the input MarketGapAnalyst input model."""
+        """Get the JSON schema for the input MarketGapAnalysis input model."""
         return self.input_validator.get_schema()
     
     def get_output_schema(self) -> Dict[str, Any]:
-        """Get the JSON schema for the output MarketGapAnalyst response list."""
-        return {
-            "type": "array",
-            "items": MarketGapAnalystOutput.model_json_schema()  
-          }
+        """Get the JSON schema for the output MarketGap response list."""
+        return self.output_validator.get_output_schema()
+
 
 class MarketDataValidator:
     """Validator for Market Data Agent input and output."""
 
     def __init__(self):
-        self.input_validator = BaseValidator(MarketDataInput)
+        self.input_validator = BaseValidator(MarketDataRequest)
         self.output_validator = BaseValidator(MarketData)
 
     def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
@@ -297,73 +223,30 @@ class MarketDataValidator:
 
     def get_input_schema(self) -> Dict[str, Any]:
         """Return input schema for market data."""
-        return MarketDataInput.model_json_schema()
+        return MarketDataRequest.model_json_schema()
 
     def get_output_schema(self) -> Dict[str, Any]:
         """Return output schema for market data."""
         return MarketData.model_json_schema()
 
-class OpportunityAgentValidator:
+
+class OpportunityValidator:
     """Validator for Opportunity Agent input and output"""
 
     def __init__(self):
-        self.input_model = MarketGapAnalystOutput
-        self.output_model = Opportunity
+        self.input_validator = ListValidator(MarketGap)
+        self.output_validator = ListValidator(Opportunity)
 
     def validate_input(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Validate input for Opportunity Agent (list of market gaps)"""
-        try:
-            validated = [self.input_model.model_validate(item) for item in data]
-            return {
-                "valid": True,
-                "data": [item.model_dump() for item in validated],
-                "error": None
-            }
-        except ValidationError as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e),
-                "error_details": e.errors()
-            }
-        except Exception as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Unexpected validation error: {str(e)}"
-            }
+        return self.input_validator.validate_output(data)
 
     def validate_output(self, data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Validate the Opportunity Agent output"""
-        try:
-            validated = [self.output_model.model_validate(item) for item in data]
-            return {
-                "valid": True,
-                "data": [item.model_dump() for item in validated],
-                "error": None
-            }
-        except ValidationError as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": str(e),
-                "error_details": e.errors()
-            }
-        except Exception as e:
-            return {
-                "valid": False,
-                "data": None,
-                "error": f"Unexpected validation error: {str(e)}"
-            }
+        return self.output_validator.validate_output(data)
 
     def get_input_schema(self) -> Dict[str, Any]:
-        return {
-            "type": "array",
-            "items": self.input_model.model_json_schema()
-        }
+        return self.input_validator.get_output_schema()
 
     def get_output_schema(self) -> Dict[str, Any]:
-        return {
-            "type": "array",
-            "items": self.output_model.model_json_schema()
-        }
+        return self.output_validator.get_output_schema()

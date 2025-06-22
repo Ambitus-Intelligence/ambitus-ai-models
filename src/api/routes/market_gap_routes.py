@@ -1,23 +1,16 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any
 from src.agents.market_gap_agent import run_market_gap_analysis_agent
-from src.utils.validation import MarketGapAnalystValidator, MarketGapAnalystInput
+from src.utils.validation import MarketGapAnalysisValidator
+from src.utils.models import MarketGapAnalysisRequest, MarketGapAnalysisResponse
 
 router = APIRouter()
 
 # Initialize validator
-validator = MarketGapAnalystValidator()
+validator = MarketGapAnalysisValidator()
 
-# Output Model
-class MarketGapAnalystResponse(BaseModel):
-    success: bool
-    data: Optional[List[Dict[str, Any]]] = None
-    error: Optional[str] = None
-    raw_response: Optional[str] = None
-
-@router.post("/", response_model=MarketGapAnalystResponse)
-async def analyze_market_gaps(request: MarketGapAnalystInput) -> MarketGapAnalystResponse:
+@router.post("/", response_model=MarketGapAnalysisResponse)
+async def analyze_market_gaps(request: MarketGapAnalysisRequest) -> MarketGapAnalysisResponse:
     """
     Analyze a company profile, competitor list and market stats to give market gaps.
     
@@ -33,7 +26,7 @@ async def analyze_market_gaps(request: MarketGapAnalystInput) -> MarketGapAnalys
     # Validate input
     input_validation = validator.validate_input(incoming_data_dict)
     if not input_validation["valid"]:
-        return MarketGapAnalystResponse(
+        return MarketGapAnalysisResponse(
             success=False,
             error=f"Invalid input data: {input_validation['error']}"
         )
@@ -42,7 +35,7 @@ async def analyze_market_gaps(request: MarketGapAnalystInput) -> MarketGapAnalys
     result = run_market_gap_analysis_agent(input_validation["data"])
     
     if not result["success"]:
-        return MarketGapAnalystResponse(
+        return MarketGapAnalysisResponse(
             success=False,
             error=result['error'],
             raw_response=result.get("raw_response")
@@ -51,13 +44,13 @@ async def analyze_market_gaps(request: MarketGapAnalystInput) -> MarketGapAnalys
     # Validate output
     output_validation = validator.validate_output(result["data"])
     if not output_validation["valid"]:
-        return MarketGapAnalystResponse(
+        return MarketGapAnalysisResponse(
             success=False,
             error=output_validation['error'],
             raw_response=result.get("raw_response")
         )
     
-    return MarketGapAnalystResponse(
+    return MarketGapAnalysisResponse(
         success=True,
         data=output_validation["data"],
         raw_response=result.get("raw_response")
