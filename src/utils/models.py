@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
 
@@ -63,6 +63,32 @@ class CompanyResearchRequest(BaseModel):
     company_name: str
 
 
+class ReportSynthesisRequest(BaseModel):
+    """
+    PLACEHOLDER: Input schema for Report Synthesis Agent
+    
+    TODO: Refine schema based on actual agent outputs in issue #47
+    """
+    company_profile: Optional[Dict[str, Any]] = None
+    industry_analysis: Optional[List[Dict[str, Any]]] = None
+    market_data: Optional[Dict[str, Any]] = None
+    competitive_landscape: Optional[List[Dict[str, Any]]] = None
+    market_gaps: Optional[List[Dict[str, Any]]] = None
+    opportunities: Optional[List[Dict[str, Any]]] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "company_profile": {"name": "Example Corp", "industry": "Technology"},
+                "industry_analysis": [{"domain": "AI/ML", "score": 0.9}],
+                "market_data": {"market_size_usd": 1000000000},
+                "competitive_landscape": [{"competitor": "Competitor A"}],
+                "market_gaps": [{"gap": "Missing feature X"}],
+                "opportunities": [{"title": "Expand to new market"}]
+            }
+        }
+
+
 # Response Models
 class BaseResponse(BaseModel):
     success: bool
@@ -92,3 +118,11 @@ class MarketGapAnalysisResponse(BaseResponse):
 
 class OpportunityResponse(BaseResponse):
     data: Optional[List[Opportunity]] = None
+
+
+class ReportSynthesisResponse(BaseModel):
+    """Response model for Report Synthesis Agent"""
+    success: bool
+    data: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
