@@ -4,34 +4,28 @@ from typing import Dict, Any, List, Optional
 
 from src.agents.opportunity_agent import run_opportunity_agent
 from src.utils.validation import OpportunityAgentValidator
+from src.utils.validation import MarketGapAnalystOutput, Opportunity
 import json
 
 router = APIRouter()
 validator = OpportunityAgentValidator()
 
 # -------------------- MODELS --------------------
-
-class MarketGapItem(BaseModel):
-    gap: str
-    impact: str
-    evidence: str
-    source: List[str]
-
 class OpportunityAgentResponse(BaseModel):
     success: bool
-    data: Optional[List[Dict[str, Any]]] = None
+    data: Optional[List[Opportunity]] = None
     error: Optional[str] = None
     raw_response: Optional[str] = None
 
 # -------------------- POST ENDPOINT --------------------
 
 @router.post("/", response_model=OpportunityAgentResponse)
-async def opportunity_agent_endpoint(request: List[MarketGapItem]) -> OpportunityAgentResponse:
+async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> OpportunityAgentResponse:
     """
     Generate and rank growth opportunities based on market gaps.
 
     Args:
-        request: List of market gap dictionaries
+        request: List of validated MarketGapAnalystOutput objects
 
     Returns:
         Structured opportunity list or error details
