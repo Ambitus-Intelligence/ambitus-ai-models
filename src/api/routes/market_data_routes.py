@@ -2,17 +2,15 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 from src.agents.market_data_agent import run_market_data_agent
-from src.utils.validation import MarketDataValidator
+from src.utils.validation import MarketDataValidator, MarketData
+from src.utils.validation import MarketDataInput as MarketDataRequest
+
 
 router = APIRouter()
 validator = MarketDataValidator()
-
-class MarketDataRequest(BaseModel):
-    domain: str
-
 class MarketDataResponse(BaseModel):
     success: bool
-    data: Optional[dict] = None
+    data: Optional[MarketData] = None
     error: Optional[str] = None
     raw_response: Optional[str] = None
 
