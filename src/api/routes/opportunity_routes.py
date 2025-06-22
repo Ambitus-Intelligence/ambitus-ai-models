@@ -1,80 +1,84 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any, List, Optional
+
 from src.agents.opportunity_agent import run_opportunity_agent
 from src.utils.validation import OpportunityAgentValidator
+from src.utils.validation import MarketGapAnalystOutput, Opportunity
+import json
 
-# FastAPI router
 router = APIRouter()
-opportunity_validator = OpportunityAgentValidator()
+validator = OpportunityAgentValidator()
 
-# Input schema
-class OpportunityAgentRequest(BaseModel):
-    market_gaps: List[str]
+# -------------------- MODELS --------------------
+class OpportunityAgentResponse(BaseModel):
+    success: bool
+    data: Optional[List[Opportunity]] = None
+    error: Optional[str] = None
+    raw_response: Optional[str] = None
 
-# Output schema
-class Opportunity(BaseModel):
-    title: str
-    priority: str
-    description: str
-    sources: List[str]
+# -------------------- POST ENDPOINT --------------------
 
-# POST endpoint
-@router.post("/", response_model=List[Opportunity])
-async def opportunity_agent_endpoint(request_data: OpportunityAgentRequest):
+@router.post("/", response_model=OpportunityAgentResponse)
+async def opportunity_agent_endpoint(request: List[MarketGapAnalystOutput]) -> OpportunityAgentResponse:
     """
     Generate and rank growth opportunities based on market gaps.
-    Returns a list of opportunity objects.
+
+    Args:
+        request: List of validated MarketGapAnalystOutput objects
+
+    Returns:
+        Structured opportunity list or error details
     """
+    input_list = [item.model_dump() for item in request]
+
+    # Validate input
+    input_validation = validator.validate_input(input_list)
+    if not input_validation["valid"]:
+        return OpportunityAgentResponse(
+            success=False,
+            error=input_validation["error"]
+        )
+
     try:
-        result = run_opportunity_agent(request_data.dict())
+        # Run the agent
+        result = run_opportunity_agent(input_validation["data"])
 
-        if not result["success"]:
-            raise HTTPException(status_code=400, detail=result["error"])
+        # Ensure result is a dict with success flag and data list
+        if not isinstance(result, dict) or not result.get("success") or not isinstance(result.get("data"), list):
+            return OpportunityAgentResponse(
+                success=False,
+                error="Agent returned an unexpected response format (expected a dict with a list under 'data').",
+                raw_response=json.dumps(result)
+            )
 
-        validation = opportunity_validator.validate_output(result["data"])
+        # Validate output
+        output_validation = validator.validate_output(result["data"])
+        if not output_validation["valid"]:
+            return OpportunityAgentResponse(
+                success=False,
+                error=output_validation["error"],
+                raw_response=result.get("raw_response")
+            )
 
-        if not validation["valid"]:
-            raise HTTPException(status_code=422, detail=validation["error"])
-
-        return validation["data"]
+        return OpportunityAgentResponse(
+            success=True,
+            data=output_validation["data"],
+            raw_response=result.get("raw_response")
+        )
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return OpportunityAgentResponse(
+            success=False,
+            error=f"Unhandled exception in agent execution: {str(e)}"
+        )
 
-# Input schema endpoint
+# -------------------- SCHEMA ENDPOINTS --------------------
+
 @router.get("/schema/input")
 async def get_opportunity_input_schema() -> Dict[str, Any]:
-    """Return input schema for Opportunity Agent"""
-    return {
-        "type": "object",
-        "properties": {
-            "market_gaps": {
-                "type": "array",
-                "items": {"type": "string"},
-                "description": "List of identified market gaps"
-            }
-        },
-        "required": ["market_gaps"]
-    }
+    return validator.get_input_schema()
 
-# Output schema endpoint
 @router.get("/schema/output")
 async def get_opportunity_output_schema() -> Dict[str, Any]:
-    """Return output schema for Opportunity Agent"""
-    return {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "title": {"type": "string"},
-                "priority": {"type": "string"},
-                "description": {"type": "string"},
-                "sources": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                }
-            },
-            "required": ["title", "priority", "description", "sources"]
-        }
-    }
+    return validator.get_output_schema()

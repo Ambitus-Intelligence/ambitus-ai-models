@@ -303,7 +303,6 @@ class MarketDataValidator:
         """Return output schema for market data."""
         return MarketData.model_json_schema()
 
-    
 class OpportunityAgentValidator:
     """Validator for Opportunity Agent input and output"""
 
