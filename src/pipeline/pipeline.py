@@ -9,45 +9,53 @@ from agents.report_synthesis_agent import ReportSynthesisAgent
 # from agents.citation_agent import CitationAgent
 
 
-def build_branching_pipeline() -> Pipeline:
-    pipeline = Pipeline()
+def run_linear_pipeline(company_name: str, selected_domain: str = None) -> str:
+    """
+    Executes the linear pipeline and returns path to the final PDF.
+    """
+    # citation_agent = CitationAgent()
+    # all_citations = []
 
-    # Instantiate agents
+    # 1. Company Research
     cra = CompanyResearchAgent()
+    cra_output = cra.run({"company": company_name})
+    # all_citations.extend(citation_agent.run(step="CompanyResearch", content=cra_output["citations"]))
+
+    # 2. Industry Analysis
     ida = IndustryAnalysisAgent()
+    ida_output = ida.run(cra_output["result"])
+    # all_citations.extend(citation_agent.run(step="IndustryAnalysis", content=ida_output["citations"]))
+
+    # 3. Domain Selection (simple pick for now)
+    domain = selected_domain or ida_output["result"]["domains"][0]
+
+    # 4. Market Data (for selected domain)
     mda = MarketDataAgent()
+    mda_output = mda.run({"domain": domain})
+    # all_citations.extend(citation_agent.run(step="MarketData", content=mda_output["citations"]))
+
+    # 5. Competitive Landscape
     cla = CompetitiveLandscapeAgent()
+    cla_output = cla.run(mda_output["result"])
+    # all_citations.extend(citation_agent.run(step="CompetitiveLandscape", content=cla_output["citations"]))
+
+    # 6. Gap Analysis
     ga = GapAnalysisAgent()
+    ga_output = ga.run(cla_output["result"])
+    # all_citations.extend(citation_agent.run(step="GapAnalysis", content=ga_output["citations"]))
+
+    # 7. Opportunity Agent
     oa = OpportunityAgent()
+    oa_output = oa.run(ga_output["result"])
+    # all_citations.extend(citation_agent.run(step="OpportunityAnalysis", content=oa_output["citations"]))
+
+    # 8. Report Synthesis + PDF generation
     rsa = ReportSynthesisAgent()
-    # cit = CitationAgent()  # Optional tool
+    report_path = rsa.run({
+        "opportunities": oa_output["result"],
+        # "citations": all_citations,
+        "format": "pdf",
+        "company": company_name
+    })["pdf_path"]
 
-    # Add nodes
-    pipeline.add_node(component=cra, name="CompanyResearch", inputs=["Query"])
-    pipeline.add_node(component=ida, name="IndustryAnalysis", inputs=[])
-    
-    # Domain Selection: emulate branching (no built-in router or decision node (yet))
-    pipeline.add_node(component=mda, name="MarketData", inputs=[])
-    pipeline.add_node(component=cla, name="CompetitiveLandscape", inputs=[])
-
-    pipeline.add_node(component=ga, name="GapAnalysis", inputs=[])
-    pipeline.add_node(component=oa, name="OpportunityAnalysis", inputs=[])
-    pipeline.add_node(component=rsa, name="ReportSynthesis", inputs=[])
-    # pipeline.add_node(component=cit, name="Citation", inputs=[])
-
-    # Connect main flow
-    pipeline.connect("CompanyResearch", "IndustryAnalysis")
-
-    # "Domain Selection" → branch to MarketData and CompetitiveLandscape in parallel
-    pipeline.connect("IndustryAnalysis", "MarketData")
-    pipeline.connect("IndustryAnalysis", "CompetitiveLandscape")
-
-    # Merge outputs into GapAnalysis
-    pipeline.connect("MarketData", "GapAnalysis.input_1")
-    pipeline.connect("CompetitiveLandscape", "GapAnalysis.input_2")
-
-    # Continue downstream
-    pipeline.connect("GapAnalysis", "OpportunityAnalysis")
-    pipeline.connect("OpportunityAnalysis", "ReportSynthesis")
-
-    return pipeline
+    return report_path
