@@ -1,61 +1,112 @@
-from haystack import Pipeline
-from agents.company_research_agent import CompanyResearchAgent
-from agents.industry_analysis_agent import IndustryAnalysisAgent
-from agents.market_data_agent import MarketDataAgent
-from agents.competitive_landscape_agent import CompetitiveLandscapeAgent
-from agents.market_gap_agent import GapAnalysisAgent
-from agents.opportunity_agent import OpportunityAgent
-from agents.report_synthesis_agent import ReportSynthesisAgent
-# from agents.citation_agent import CitationAgent
+import logging
+from datetime import datetime
+
+from src.agents.company_research_agent import run_company_research_agent
+from src.agents.industry_analysis_agent import run_industry_analysis_agent
+from src.agents.market_data_agent import run_market_data_agent
+from src.agents.competitive_landscape_agent import run_competitive_landscape_agent
+from src.agents.market_gap_agent import run_market_gap_analysis_agent
+from src.agents.opportunity_agent import run_opportunity_agent
+from src.agents.report_synthesis_agent import run_report_synthesis_agent
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
 
 
-def run_linear_pipeline(company_name: str, selected_domain: str = None) -> str:
-    """
-    Executes the linear pipeline and returns path to the final PDF.
-    """
-    # citation_agent = CitationAgent()
-    # all_citations = []
+def safe_run(agent_fn, input_data, step_name):
+    """Executes agent function and returns output in a standard format."""
+    try:
+        logger.info(f"Running step: {step_name}")
+        raw_output = agent_fn(input_data)
+        logger.info(f"Step '{step_name}' completed. Output keys: {list(raw_output.keys())}")
 
-    # 1. Company Research
-    cra = CompanyResearchAgent()
-    cra_output = cra.run({"company": company_name})
-    # all_citations.extend(citation_agent.run(step="CompanyResearch", content=cra_output["citations"]))
+        # Normalize output
+        if "result" in raw_output:
+            return {"result": raw_output["result"]}
+        elif "data" in raw_output:
+            return {"result": raw_output["data"]}
+        elif "raw_response" in raw_output:
+            return {"result": raw_output["raw_response"]}
+        else:
+            return {"result": raw_output}
 
-    # 2. Industry Analysis
-    ida = IndustryAnalysisAgent()
-    ida_output = ida.run(cra_output["result"])
-    # all_citations.extend(citation_agent.run(step="IndustryAnalysis", content=ida_output["citations"]))
+    except Exception as e:
+        logger.error(f"Step '{step_name}' failed: {e}", exc_info=True)
+        return {"result": None}
 
-    # 3. Domain Selection (simple pick for now)
-    domain = selected_domain or ida_output["result"]["domains"][0]
 
-    # 4. Market Data (for selected domain)
-    mda = MarketDataAgent()
-    mda_output = mda.run({"domain": domain})
-    # all_citations.extend(citation_agent.run(step="MarketData", content=mda_output["citations"]))
+def run_linear_pipeline(company_name: str, selected_domain: str = None) -> dict:
+    logger.info(f"Starting pipeline for company: {company_name}")
 
-    # 5. Competitive Landscape
-    cla = CompetitiveLandscapeAgent()
-    cla_output = cla.run(mda_output["result"])
-    # all_citations.extend(citation_agent.run(step="CompetitiveLandscape", content=cla_output["citations"]))
+    # 1. Company Research Agent
+    cra_output = safe_run(run_company_research_agent, {"company": company_name}, "CompanyResearch")
+    if cra_output["result"] is None:
+        return {"success": False, "error": "Company research failed."}
+    company_profile = cra_output["result"]
 
-    # 6. Gap Analysis
-    ga = GapAnalysisAgent()
-    ga_output = ga.run(cla_output["result"])
-    # all_citations.extend(citation_agent.run(step="GapAnalysis", content=ga_output["citations"]))
+    # 2. Industry Analysis Agent
+    ida_output = safe_run(run_industry_analysis_agent, company_profile, "IndustryAnalysis")
+    if ida_output["result"] is None:
+        return {"success": False, "error": "Industry analysis failed."}
+    domains = ida_output["result"].get("domains", [])
+    if not domains:
+        return {"success": False, "error": "No domains found."}
+    domain = selected_domain or domains[0]
+    logger.info(f"Selected domain: {domain}")
 
-    # 7. Opportunity Agent
-    oa = OpportunityAgent()
-    oa_output = oa.run(ga_output["result"])
-    # all_citations.extend(citation_agent.run(step="OpportunityAnalysis", content=oa_output["citations"]))
+    # 3. Market Data Agent
+    mda_output = safe_run(run_market_data_agent, {"domain": domain}, "MarketData")
+    if mda_output["result"] is None:
+        return {"success": False, "error": "Market data collection failed."}
+    market_data = mda_output["result"]
 
-    # 8. Report Synthesis + PDF generation
-    rsa = ReportSynthesisAgent()
-    report_path = rsa.run({
-        "opportunities": oa_output["result"],
-        # "citations": all_citations,
-        "format": "pdf",
-        "company": company_name
-    })["pdf_path"]
+    # 4. Competitive Landscape Agent
+    cla_output = safe_run(run_competitive_landscape_agent, {"domain": domain}, "CompetitiveLandscape")
+    if cla_output["result"] is None:
+        return {"success": False, "error": "Competitive landscape analysis failed."}
+    competitive_data = cla_output["result"]
 
-    return report_path
+    # 5. Gap Analysis Agent
+    ga_input = {
+        "market_data": market_data,
+        "competitive_landscape": competitive_data
+    }
+    ga_output = safe_run(run_market_gap_analysis_agent, ga_input, "GapAnalysis")
+    if ga_output["result"] is None:
+        return {"success": False, "error": "Gap analysis failed."}
+    market_gaps = ga_output["result"]
+
+    # 6. Opportunity Agent
+    oa_output = safe_run(run_opportunity_agent, market_gaps, "OpportunityAnalysis")
+    if oa_output["result"] is None:
+        return {"success": False, "error": "Opportunity analysis failed."}
+    opportunities = oa_output["result"]
+
+    # 7. Report Synthesis Agent
+    report_input = {
+        "company_profile": company_profile,
+        "industry_analysis": ida_output["result"],
+        "market_data": market_data,
+        "competitive_landscape": competitive_data,
+        "market_gaps": market_gaps,
+        "opportunities": opportunities,
+    }
+
+    try:
+        report_output = run_report_synthesis_agent(report_input)
+        final_data = report_output.get("data", report_output)  # fallback in case it's directly returned
+
+        return {
+            "success": True,
+            "pdf_content": final_data["pdf_content"],
+            "report_title": final_data["report_title"],
+            "generated_at": final_data["generated_at"],
+            "placeholder": final_data.get("placeholder", True)
+        }
+    except Exception as e:
+        logger.error("Report Synthesis Agent failed.", exc_info=True)
+        return {
+            "success": False,
+            "error": "Report synthesis failed.",
+            "details": str(e)
+        }

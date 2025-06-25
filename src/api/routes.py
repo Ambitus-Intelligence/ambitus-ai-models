@@ -1,8 +1,9 @@
 import sys
 import os
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, APIRouter, Query
 from pydantic import BaseModel
 from typing import Dict, Any
+
 
 # Add project root to path for absolute imports
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -10,6 +11,7 @@ sys.path.insert(0, project_root)
 
 from src.api.routes import api_router
 from src.utils.mcp_manager import MCPServerManager
+from src.pipeline import pipeline
 
 app = FastAPI(title="Ambitus AI Models API", version="0.0.1")
 
@@ -46,6 +48,17 @@ async def start_mcp_server():
     """Start the MCP server if not running"""
     result = mcp_manager.ensure_server_running()
     return result
+
+class PipelineRequest(BaseModel):
+    company: str
+    domain: str | None = None
+
+@app.post("/run-pipeline")
+def run_pipeline(payload: PipelineRequest):
+    return pipeline.run_linear_pipeline(
+        company_name=payload.company,
+        selected_domain=payload.domain
+    )
 
 if __name__ == "__main__":
     import uvicorn
