@@ -48,6 +48,15 @@ class Opportunity(BaseModel):
     sources: List[str]
 
 
+# CLI Models
+class PipelineConfig(BaseModel):
+    """Configuration for CLI pipeline execution"""
+    company_name: str
+    domain: Optional[str] = None
+    output_path: Optional[str] = None
+    output_format: str = "json"
+
+
 # Request Models
 class MarketDataRequest(BaseModel):
     domain: str
