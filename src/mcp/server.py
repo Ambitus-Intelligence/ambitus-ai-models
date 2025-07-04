@@ -1,6 +1,12 @@
 import os
+import sys
 from fastapi import Request
 from fastapi.responses import PlainTextResponse
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 try:
     from fastmcp import FastMCP
@@ -10,9 +16,9 @@ except ImportError as e:
     raise
 
 try:
-    from tools.ping_tool import ping_tool
-    from tools.search_tool import search_tool
-    from tools.citation_agent_tool import citation_agent
+    from src.mcp.tools.ping_tool import ping_tool
+    from src.mcp.tools.search_tool import search_tool
+    from src.mcp.tools.citation_agent_tool import citation_agent
     TOOLS_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Some tools could not be imported: {e}")
