@@ -1,0 +1,50 @@
+import json
+import os
+from rich.console import Console
+from rich.panel import Panel
+from rich.text import Text
+from rich.layout import Layout
+from rich.prompt import Prompt, Confirm
+from rich.progress import Progress, SpinnerColumn, TextColumn
+
+from src.cli.tui.menus import MainMenuHandler
+from src.cli.tui.server_status import ServerStatusHandler
+from src.cli.tui.agent_info import AgentInfoHandler
+from src.cli.tui.pipeline_runner import PipelineRunnerHandler
+from src.pipeline.pipeline import run_linear_pipeline
+
+class AmbitusApp:
+    """Terminal User Interface for Ambitus AI Models"""
+    
+    def __init__(self):
+        self.console = Console()
+        self.menu_handler = MainMenuHandler(self.console)
+        self.server_status_handler = ServerStatusHandler(self.console)
+        self.agent_info_handler = AgentInfoHandler(self.console)
+        self.pipeline_runner_handler = PipelineRunnerHandler(self.console)
+        
+    def run(self):
+        """Main TUI loop"""
+        while True:
+            self.menu_handler.show_main_menu()
+            choice = self.menu_handler.get_user_choice()
+            
+            if choice == "1":
+                self.run_individual_agent()
+            elif choice == "2":
+                self.pipeline_runner_handler.run_full_pipeline()
+            elif choice == "3":
+                self.server_status_handler.show_server_status()
+            elif choice == "4":
+                self.agent_info_handler.show_agent_info()
+            elif choice == "5":
+                break
+            else:
+                self.console.print("[red]Invalid choice! Please try again.[/red]")
+                
+    def run_individual_agent(self):
+        """Interface for running individual agents"""
+        self.console.print("\n[bold]Individual Agent Runner[/bold]")
+        self.console.print("[yellow]Individual agent execution not yet implemented.[/yellow]")
+        self.console.print("[dim]This feature will be available in future versions.[/dim]")
+        input("\nPress Enter to continue...")
