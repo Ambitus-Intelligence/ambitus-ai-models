@@ -71,32 +71,13 @@ class MarketGapAnalysisRequest(BaseModel):
 class CompanyResearchRequest(BaseModel):
     company_name: str
 
-
 class ReportSynthesisRequest(BaseModel):
-    """
-    PLACEHOLDER: Input schema for Report Synthesis Agent
-    
-    TODO: Refine schema based on actual agent outputs in issue #47
-    """
-    company_profile: Optional[Dict[str, Any]] = None
-    industry_analysis: Optional[List[Dict[str, Any]]] = None
-    market_data: Optional[Dict[str, Any]] = None
-    competitive_landscape: Optional[List[Dict[str, Any]]] = None
-    market_gaps: Optional[List[Dict[str, Any]]] = None
-    opportunities: Optional[List[Dict[str, Any]]] = None
-    
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "company_profile": {"name": "Example Corp", "industry": "Technology"},
-                "industry_analysis": [{"domain": "AI/ML", "score": 0.9}],
-                "market_data": {"market_size_usd": 1000000000},
-                "competitive_landscape": [{"competitor": "Competitor A"}],
-                "market_gaps": [{"gap": "Missing feature X"}],
-                "opportunities": [{"title": "Expand to new market"}]
-            }
-        }
-
+    company_research_data: Company
+    domain_research_data: List[IndustryOpportunity]
+    market_research_data: MarketData
+    competitive_research_data: List[CompetitiveLandscape]
+    gap_analysis_data: List[MarketGap]
+    opportunity_research_data: List[Opportunity] 
 
 # Response Models
 class BaseResponse(BaseModel):
