@@ -1,7 +1,7 @@
 [project]
 name = "ambitus-ai-models"
 version = "0.1.0"
-description = "Add your description here"
+description = "Ambitus AI Models - A collection of AI models for various tasks"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
