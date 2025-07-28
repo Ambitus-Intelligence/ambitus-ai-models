@@ -25,10 +25,7 @@ validator = ReportSynthesisValidator()
 @router.post("/", response_class=Response)
 async def synthesize_report(request: ReportSynthesisRequest):
     """
-    PLACEHOLDER: Generate a comprehensive market research report
-    
-    TODO: Implement full report synthesis in issue #47
-    
+    Generate a comprehensive market research report
     Args:
         request: Combined outputs from all previous agents
         
@@ -83,7 +80,7 @@ async def synthesize_report(request: ReportSynthesisRequest):
 @router.post("/json", response_model=ReportSynthesisResponse)
 async def synthesize_report_json(request: ReportSynthesisRequest) -> ReportSynthesisResponse:
     """
-    PLACEHOLDER: Generate report and return JSON response with metadata
+    Generate report and return JSON response with metadata
     
     This endpoint returns the report data in JSON format instead of direct PDF download.
     Useful for testing and API integration.

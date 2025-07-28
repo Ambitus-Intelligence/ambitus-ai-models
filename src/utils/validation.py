@@ -5,7 +5,7 @@ import json
 from src.utils.models import (
     Company, IndustryOpportunity, CompetitiveLandscape, 
     MarketData, MarketGap, Opportunity, MarketDataRequest, 
-    MarketGapAnalysisRequest
+    MarketGapAnalysisRequest, ReportSynthesisRequest, ReportSynthesisResponse
 )
 
 
@@ -253,46 +253,19 @@ class OpportunityValidator:
 
 
 class ReportSynthesisValidator:
-    """
-    PLACEHOLDER: Validator for Report Synthesis Agent
+    """Validator for Report Synthesis Agent input and output"""
     
-    TODO: Implement comprehensive validation in issue #47
-    """
+    def __init__(self):
+        self.input_validator = BaseValidator(ReportSynthesisRequest)
     
     def validate_input(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Placeholder input validation for report synthesis
-        """
-        try:
-            # Basic validation - at least one data section should be present
-            required_sections = [
-                "company_profile", "industry_analysis", "market_data",
-                "competitive_landscape", "market_gaps", "opportunities"
-            ]
-            
-            has_data = any(section in data and data[section] is not None 
-                          for section in required_sections)
-            
-            if not has_data:
-                return {
-                    "valid": False,
-                    "error": "At least one data section must be provided"
-                }
-            
-            return {
-                "valid": True,
-                "data": data
-            }
-            
-        except Exception as e:
-            return {
-                "valid": False,
-                "error": f"Input validation error: {str(e)}"
-            }
+        """Validate report synthesis agent input model"""
+        return self.input_validator.validate(data)
     
     def validate_output(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Placeholder output validation for report synthesis
+        Validate report synthesis agent output data section
+        Expects the 'data' portion of the agent response
         """
         try:
             required_fields = ["pdf_content", "report_title", "generated_at"]
@@ -303,6 +276,25 @@ class ReportSynthesisValidator:
                         "valid": False,
                         "error": f"Missing required field: {field}"
                     }
+            
+            # Validate data types
+            if not isinstance(data.get("pdf_content"), bytes):
+                return {
+                    "valid": False,
+                    "error": "pdf_content must be bytes"
+                }
+            
+            if not isinstance(data.get("report_title"), str):
+                return {
+                    "valid": False,
+                    "error": "report_title must be a string"
+                }
+            
+            if not isinstance(data.get("generated_at"), str):
+                return {
+                    "valid": False,
+                    "error": "generated_at must be a string"
+                }
             
             return {
                 "valid": True,
@@ -316,22 +308,11 @@ class ReportSynthesisValidator:
             }
     
     def get_input_schema(self) -> Dict[str, Any]:
-        """Return the input schema for report synthesis"""
-        return {
-            "type": "object",
-            "properties": {
-                "company_profile": {"type": "object"},
-                "industry_analysis": {"type": "array"},
-                "market_data": {"type": "object"},
-                "competitive_landscape": {"type": "array"},
-                "market_gaps": {"type": "array"},
-                "opportunities": {"type": "array"}
-            },
-            "description": "Combined outputs from all previous agents for report synthesis"
-        }
+        """Get the JSON schema for the input ReportSynthesisRequest model"""
+        return self.input_validator.get_schema()
     
     def get_output_schema(self) -> Dict[str, Any]:
-        """Return the output schema for report synthesis"""
+        """Get the JSON schema for the output data section"""
         return {
             "type": "object",
             "properties": {
@@ -342,3 +323,4 @@ class ReportSynthesisValidator:
             },
             "required": ["pdf_content", "report_title", "generated_at"]
         }
+

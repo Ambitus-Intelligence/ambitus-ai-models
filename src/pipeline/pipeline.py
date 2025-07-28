@@ -82,14 +82,16 @@ def run_linear_pipeline(company_name: str, selected_domain: str = None) -> dict:
         return {"success": False, "error": "Opportunity analysis failed."}
     opportunities = oa_output["result"]
 
+
+
     # 7. Report Synthesis Agent
     report_input = {
-        "company_profile": company_profile,
-        "industry_analysis": ida_output["result"],
-        "market_data": market_data,
-        "competitive_landscape": competitive_data,
-        "market_gaps": market_gaps,
-        "opportunities": opportunities,
+        "company_research_data": company_profile,
+        "domain_research_data": ida_output['result'],
+        "market_research_data": market_data,
+        "competitive_research_data": competitive_data,
+        "gap_analysis_data": market_gaps,
+        "opportunity_research_data": opportunities
     }
 
     try:
