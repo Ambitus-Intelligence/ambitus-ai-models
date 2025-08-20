@@ -1,4 +1,6 @@
 .venv
+.venv_win
+.venv_wsl
 .env
 __pycache__/
 temp.py
