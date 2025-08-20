@@ -10,6 +10,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from src.cli.tui.menus import MainMenuHandler
 from src.cli.tui.server_status import ServerStatusHandler
 from src.cli.tui.agent_info import AgentInfoHandler
+from src.cli.tui.individual_agent_runner import IndividualAgentRunner
 
 class AmbitusApp:
     """Terminal User Interface for Ambitus AI Models"""
@@ -19,6 +20,8 @@ class AmbitusApp:
         self.menu_handler = MainMenuHandler(self.console)
         self.server_status_handler = ServerStatusHandler(self.console)
         self.agent_info_handler = AgentInfoHandler(self.console)
+        self.individual_agent_runner = IndividualAgentRunner(self.console)
+
         
     def run(self):
         """Main TUI loop"""
@@ -27,7 +30,7 @@ class AmbitusApp:
             choice = self.menu_handler.get_user_choice()
             
             if choice == "1":
-                self.run_individual_agent()
+                self.individual_agent_runner.run()
             elif choice == "2":
                 self.server_status_handler.show_server_status()
             elif choice == "3":
@@ -36,10 +39,3 @@ class AmbitusApp:
                 break
             else:
                 self.console.print("[red]Invalid choice! Please try again.[/red]")
-                
-    def run_individual_agent(self):
-        """Interface for running individual agents"""
-        self.console.print("\n[bold]Individual Agent Runner[/bold]")
-        self.console.print("[yellow]Individual agent execution not yet implemented.[/yellow]")
-        self.console.print("[dim]This feature will be available in future versions.[/dim]")
-        input("\nPress Enter to continue...")
