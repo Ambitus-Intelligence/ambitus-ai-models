@@ -10,8 +10,6 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from src.cli.tui.menus import MainMenuHandler
 from src.cli.tui.server_status import ServerStatusHandler
 from src.cli.tui.agent_info import AgentInfoHandler
-#from src.cli.tui.pipeline_runner import PipelineRunnerHandler
-#from src.pipeline.pipeline import run_linear_pipeline
 
 class AmbitusApp:
     """Terminal User Interface for Ambitus AI Models"""
@@ -21,7 +19,6 @@ class AmbitusApp:
         self.menu_handler = MainMenuHandler(self.console)
         self.server_status_handler = ServerStatusHandler(self.console)
         self.agent_info_handler = AgentInfoHandler(self.console)
-        #self.pipeline_runner_handler = PipelineRunnerHandler(self.console)
         
     def run(self):
         """Main TUI loop"""
@@ -31,13 +28,11 @@ class AmbitusApp:
             
             if choice == "1":
                 self.run_individual_agent()
-            #elif choice == "2":
-            #    self.pipeline_runner_handler.run_full_pipeline()
-            elif choice == "3":
+            elif choice == "2":
                 self.server_status_handler.show_server_status()
-            elif choice == "4":
+            elif choice == "3":
                 self.agent_info_handler.show_agent_info()
-            elif choice == "5":
+            elif choice == "4":
                 break
             else:
                 self.console.print("[red]Invalid choice! Please try again.[/red]")

@@ -23,10 +23,9 @@ class MainMenuHandler:
 [bold cyan]Main Menu[/bold cyan]
 
 [1] Run Individual Agent
-[2] Run Full Pipeline
-[3] Server Status
-[4] Agent Information
-[5] Exit
+[2] Server Status
+[3] Agent Information
+[4] Exit
 
 Choose an option:"""
         
@@ -40,4 +39,4 @@ Choose an option:"""
         
     def get_user_choice(self) -> str:
         """Get user input choice"""
-        return Prompt.ask("Enter your choice", choices=["1", "2", "3", "4", "5"])
+        return Prompt.ask("Enter your choice", choices=["1", "2", "3", "4"])
