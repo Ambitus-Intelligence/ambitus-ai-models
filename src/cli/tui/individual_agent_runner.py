@@ -10,15 +10,21 @@ from rich.columns import Columns
 from rich.markdown import Markdown
 from rich.syntax import Syntax
 
+from .keyboard_handler import KeyboardHandler, KeyCode, NavigationHandler, ContinuousInput
+
 class IndividualAgentRunner:
     """Handles individual agent execution with two-panel layout"""
     
     def __init__(self, console: Console):
         self.console = console
         self.agents = self._get_agent_definitions()
-        self.current_agent_index = 0
+        self.agent_navigator = NavigationHandler(list(self.agents.keys()))
         self.current_tab = "input"  # input, output, description
+        self.tab_navigator = NavigationHandler(["input", "output", "description"])
+        self.current_panel = "left"  # left, right
         self.agent_outputs = {}  # Store outputs for chaining
+        self.keyboard = KeyboardHandler()
+        self.input_fields = {}  # Store input field values
         
     def _get_agent_definitions(self) -> Dict[str, Dict[str, Any]]:
         """Define all available agents with their specifications"""
@@ -261,32 +267,117 @@ class IndividualAgentRunner:
         }
     
     def run(self):
-        """Main runner interface with two-panel layout"""
-        while True:
-            try:
-                self._show_interface()
-                choice = self._get_user_input()
-                
-                if choice == "quit":
-                    break
-                elif choice == "run":
-                    self._run_current_agent()
-                elif choice == "next":
-                    self._move_to_next_agent()
-                elif choice == "prev":
-                    self._move_to_previous_agent()
-                elif choice == "tab":
-                    self._switch_tab()
-                elif choice == "chain":
-                    self._run_agent_chain()
-                elif choice == "reset":
-                    self._reset_outputs()
+        """Main runner interface with continuous input and arrow key navigation"""
+        with self.keyboard:
+            while True:
+                try:
+                    self._show_interface()
                     
-            except KeyboardInterrupt:
-                break
+                    # Get key input
+                    key = self.keyboard.get_key()
+                    
+                    if key.lower() == 'q' or key == KeyCode.ESC.value:
+                        break
+                    elif key == KeyCode.UP.value:
+                        self._handle_up()
+                    elif key == KeyCode.DOWN.value:
+                        self._handle_down()
+                    elif key == KeyCode.LEFT.value:
+                        self._handle_left()
+                    elif key == KeyCode.RIGHT.value:
+                        self._handle_right()
+                    elif key == KeyCode.TAB.value:
+                        self._switch_panel()
+                    elif key == KeyCode.ENTER.value:
+                        self._handle_enter()
+                    elif key.lower() == 'r':
+                        self._run_current_agent()
+                    elif key.lower() == 'c':
+                        self._run_agent_chain()
+                    elif key.lower() == 'i':
+                        self._interactive_input()
+                    elif key.lower() == 'x':
+                        self._reset_outputs()
+                        
+                except KeyboardInterrupt:
+                    break
+    
+    def _handle_up(self):
+        """Handle up arrow key"""
+        if self.current_panel == "left":
+            self.agent_navigator.move_up()
+        elif self.current_panel == "right" and self.current_tab == "input":
+            # Navigate input fields
+            pass
+    
+    def _handle_down(self):
+        """Handle down arrow key"""
+        if self.current_panel == "left":
+            self.agent_navigator.move_down()
+        elif self.current_panel == "right" and self.current_tab == "input":
+            # Navigate input fields
+            pass
+    
+    def _handle_left(self):
+        """Handle left arrow key"""
+        if self.current_panel == "right":
+            self.tab_navigator.move_up()  # Move to previous tab
+            self.current_tab = self.tab_navigator.get_selected_item()
+    
+    def _handle_right(self):
+        """Handle right arrow key"""
+        if self.current_panel == "right":
+            self.tab_navigator.move_down()  # Move to next tab
+            self.current_tab = self.tab_navigator.get_selected_item()
+    
+    def _handle_enter(self):
+        """Handle enter key"""
+        if self.current_panel == "left":
+            # Select current agent and switch to right panel
+            self.current_panel = "right"
+        elif self.current_panel == "right":
+            if self.current_tab == "input":
+                self._interactive_input()
+            else:
+                self._run_current_agent()
+    
+    def _switch_panel(self):
+        """Switch between left and right panels"""
+        self.current_panel = "right" if self.current_panel == "left" else "left"
+    
+    def _interactive_input(self):
+        """Interactive input for current agent"""
+        current_agent_name = list(self.agents.keys())[self.agent_navigator.get_selected_index()]
+        agent_def = self.agents[current_agent_name]
+        
+        self.console.print(f"\n[bold cyan]Interactive Input for {current_agent_name}[/bold cyan]")
+        
+        if current_agent_name not in self.input_fields:
+            self.input_fields[current_agent_name] = {}
+        
+        for field, description in agent_def["input_schema"].items():
+            current_value = self.input_fields[current_agent_name].get(field, "")
+            
+            # Use continuous input
+            continuous_input = ContinuousInput(
+                prompt=f"{field}: ",
+                default=current_value,
+                on_change=lambda value, f=field, a=current_agent_name: self._update_field(a, f, value)
+            )
+            
+            new_value = continuous_input.run()
+            self.input_fields[current_agent_name][field] = new_value
+        
+        self.console.print("\n[green]Input completed![/green]")
+    
+    def _update_field(self, agent_name: str, field: str, value: str):
+        """Update field value in real-time"""
+        if agent_name not in self.input_fields:
+            self.input_fields[agent_name] = {}
+        self.input_fields[agent_name][field] = value
     
     def _show_interface(self):
-        """Display the two-panel interface"""
+        """Display the two-panel interface with navigation indicators"""
         self.console.clear()
         
         layout = Layout()
@@ -305,6 +396,17 @@ class IndividualAgentRunner:
         )
         
         self.console.print(layout)
+        
+        # Show navigation help
+        help_text = Text()
+        if self.current_panel == "left":
+            help_text.append("[LEFT PANEL] ", style="bold green")
+            help_text.append("↑↓: Navigate agents | Tab: Switch panels | Enter: Select | Q: Quit")
+        else:
+            help_text.append("[RIGHT PANEL] ", style="bold blue")
+            help_text.append("←→: Switch tabs | Tab: Switch panels | Enter: Action | I: Interactive input")
+        
+        self.console.print(Panel(help_text, style="yellow"))
     
     def _create_agent_list_panel(self) -> Panel:
         """Create the left panel with agent selection"""
@@ -312,39 +414,50 @@ class IndividualAgentRunner:
         agent_list.add_column("", style="cyan")
         
         for i, (agent_name, _) in enumerate(self.agents.items()):
-            if i == self.current_agent_index:
-                agent_list.add_row(f"▶ {agent_name}", style="bold green")
+            if i == self.agent_navigator.get_selected_index():
+                if self.current_panel == "left":
+                    agent_list.add_row(f"▶ {agent_name}", style="bold green")
+                else:
+                    agent_list.add_row(f"▷ {agent_name}", style="green")
             else:
                 status = "✓" if agent_name in self.agent_outputs else "○"
                 agent_list.add_row(f"{status} {agent_name}")
         
         controls = Text("\nControls:", style="bold")
         controls.append("\n[↑/↓] Navigate", style="dim")
+        controls.append("\n[Tab] Switch Panel", style="dim")
         controls.append("\n[Enter] Select", style="dim")
         controls.append("\n[R] Run Agent", style="dim")
         controls.append("\n[C] Run Chain", style="dim")
-        controls.append("\n[T] Switch Tab", style="dim")
+        controls.append("\n[I] Interactive Input", style="dim")
+        controls.append("\n[X] Reset", style="dim")
         controls.append("\n[Q] Quit", style="dim")
         
         content = Columns([agent_list, controls])
-        return Panel(content, title="Agent Selection", style="blue")
+        
+        panel_style = "bold blue" if self.current_panel == "left" else "blue"
+        return Panel(content, title="Agent Selection", style=panel_style)
     
     def _create_tab_header(self) -> Panel:
-        """Create tab header"""
+        """Create tab header with navigation indicators"""
         tabs = []
         tab_names = ["input", "output", "description"]
         
-        for tab in tab_names:
+        for i, tab in enumerate(tab_names):
             if tab == self.current_tab:
-                tabs.append(f"[bold green]■ {tab.upper()}[/bold green]")
+                if self.current_panel == "right":
+                    tabs.append(f"[bold green]■ {tab.upper()}[/bold green]")
+                else:
+                    tabs.append(f"[green]■ {tab.upper()}[/green]")
             else:
                 tabs.append(f"[dim]□ {tab.upper()}[/dim]")
         
-        return Panel(" | ".join(tabs), style="yellow")
+        panel_style = "bold yellow" if self.current_panel == "right" else "yellow"
+        return Panel(" | ".join(tabs), style=panel_style)
     
     def _create_tab_content(self) -> Panel:
         """Create content for the current tab"""
-        current_agent_name = list(self.agents.keys())[self.current_agent_index]
+        current_agent_name = list(self.agents.keys())[self.agent_navigator.get_selected_index()]
         agent_def = self.agents[current_agent_name]
         
         if self.current_tab == "description":
@@ -362,25 +475,33 @@ class IndividualAgentRunner:
         return Panel("Unknown tab", style="red")
     
     def _create_input_form(self, agent_name: str, agent_def: Dict) -> Text:
-        """Create input form for the agent"""
+        """Create input form for the agent with current values"""
         form = Text("Input Requirements:\n\n", style="bold")
         
         # Check if we have previous agent output to use
         prev_agent_output = self._get_previous_agent_output(agent_name)
+        current_values = self.input_fields.get(agent_name, {})
         
         for field, description in agent_def["input_schema"].items():
             form.append(f"{field}: ", style="cyan")
             form.append(f"{description}\n", style="dim")
             
+            # Show current value if any
+            current_value = current_values.get(field, "")
+            if current_value:
+                form.append(f"  Current: {current_value}\n", style="green")
+            
             # Show if data is available from previous agent
             if prev_agent_output and field.lower() in [k.lower() for k in prev_agent_output.keys()]:
-                form.append("  ✓ Available from previous agent\n", style="green")
+                form.append("  ✓ Available from previous agent\n", style="blue")
             else:
                 form.append("  ⚠ Requires manual input\n", style="yellow")
             form.append("\n")
         
+        form.append("\nPress [I] for Interactive Input", style="bold yellow")
+        
         if prev_agent_output:
-            form.append("\nPrevious Agent Output Available:", style="bold green")
+            form.append("\n\nPrevious Agent Output Available:", style="bold green")
             form.append(f"\n{json.dumps(prev_agent_output, indent=2)[:200]}...", style="dim")
         
         return form
@@ -412,34 +533,13 @@ class IndividualAgentRunner:
             
             return content
         else:
-            return Text("No output available yet.\nRun the agent to generate output.", style="dim")
-    
-    def _get_user_input(self) -> str:
-        """Get user input for navigation"""
-        key = self.console.input("")
-        
-        if key.lower() in ['q', 'quit']:
-            return "quit"
-        elif key.lower() in ['r', 'run']:
-            return "run"
-        elif key.lower() in ['c', 'chain']:
-            return "chain"
-        elif key.lower() in ['t', 'tab']:
-            return "tab"
-        elif key == '\x1b[A':  # Up arrow
-            return "prev"
-        elif key == '\x1b[B':  # Down arrow
-            return "next"
-        elif key == '':  # Enter
-            return "run"
-        else:
-            return "invalid"
+            return Text("No output available yet.\nPress [R] to run agent or [Enter] to execute.", style="dim")
     
     def _run_current_agent(self):
         """Run the currently selected agent"""
-        current_agent_name = list(self.agents.keys())[self.current_agent_index]
+        current_agent_name = list(self.agents.keys())[self.agent_navigator.get_selected_index()]
         
-        # Get input from user or previous agent
+        # Get input from stored values or previous agent
         agent_input = self._collect_agent_input(current_agent_name)
         
         if agent_input:
@@ -455,26 +555,25 @@ class IndividualAgentRunner:
             else:
                 self.console.print(f"[red]✗ {current_agent_name} output validation failed![/red]")
                 self.console.print(f"[yellow]Issues: {', '.join(validation_result['issues'])}[/yellow]")
-            
-            input("Press Enter to continue...")
+        else:
+            self.console.print("[yellow]No input available. Use [I] for interactive input.[/yellow]")
     
     def _collect_agent_input(self, agent_name: str) -> Optional[Dict]:
-        """Collect input for the agent"""
+        """Collect input for the agent from stored values or previous agent"""
         agent_def = self.agents[agent_name]
         collected_input = {}
         
-        # Try to use previous agent output first
+        # Try to use stored input values first
+        stored_input = self.input_fields.get(agent_name, {})
+        
+        # Try to use previous agent output
         prev_output = self._get_previous_agent_output(agent_name)
         
         for field, description in agent_def["input_schema"].items():
-            # Check if we can use previous agent output
-            if prev_output and field.lower().replace('_', ' ') in ' '.join(prev_output.keys()).lower():
+            if field in stored_input and stored_input[field]:
+                collected_input[field] = stored_input[field]
+            elif prev_output and field.lower().replace('_', ' ') in ' '.join(prev_output.keys()).lower():
                 collected_input[field] = prev_output
-            else:
-                # Manual input
-                value = Prompt.ask(f"Enter {field}", default="")
-                if value:
-                    collected_input[field] = value
         
         return collected_input if collected_input else None
     
@@ -508,28 +607,12 @@ class IndividualAgentRunner:
         validator = OutputValidator()
         return validator.validate(agent_name, output)
     
-    def _move_to_next_agent(self):
-        """Move to next agent in the list"""
-        if self.current_agent_index < len(self.agents) - 1:
-            self.current_agent_index += 1
-    
-    def _move_to_previous_agent(self):
-        """Move to previous agent in the list"""
-        if self.current_agent_index > 0:
-            self.current_agent_index -= 1
-    
-    def _switch_tab(self):
-        """Switch between tabs"""
-        tabs = ["input", "output", "description"]
-        current_index = tabs.index(self.current_tab)
-        self.current_tab = tabs[(current_index + 1) % len(tabs)]
-    
     def _run_agent_chain(self):
         """Run all agents in sequence"""
         self.console.print("[bold yellow]Running agent chain...[/bold yellow]")
         
         for i, agent_name in enumerate(self.agents.keys()):
-            self.current_agent_index = i
+            self.agent_navigator.set_selected_index(i)
             self.console.print(f"[cyan]Running {agent_name}...[/cyan]")
             
             # Collect input
@@ -552,13 +635,12 @@ class IndividualAgentRunner:
                 break
         
         self.console.print("[bold green]Agent chain completed![/bold green]")
-        input("Press Enter to continue...")
     
     def _reset_outputs(self):
-        """Reset all agent outputs"""
-        if Confirm.ask("Reset all agent outputs?"):
-            self.agent_outputs.clear()
-            self.console.print("[yellow]All outputs cleared[/yellow]")
+        """Reset all agent outputs and input fields"""
+        self.agent_outputs.clear()
+        self.input_fields.clear()
+        self.console.print("[yellow]All outputs and inputs cleared[/yellow]")
 
 
 class OutputValidator:
