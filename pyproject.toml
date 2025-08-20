@@ -31,5 +31,3 @@ dependencies = [
 
 [project.scripts]
 ambitus = "src.app:main"
-[tool.pytest.ini_options]
-pythonpath = ["src"]
