@@ -1,4 +1,8 @@
-.venv
-.env
+venv
+env
 __pycache__/
 temp.py
+pdm.lock
+.pdm-python
+ambitus_ai.egg-info/
+*.egg-info/
