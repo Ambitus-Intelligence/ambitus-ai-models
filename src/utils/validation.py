@@ -132,6 +132,10 @@ class CompanyValidator(BaseValidator):
     
     def __init__(self):
         super().__init__(Company)
+    
+    def validate_output(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate company research output"""
+        return self.validate(data)
 
 
 class IndustryAnalysisValidator:
