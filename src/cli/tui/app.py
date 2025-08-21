@@ -11,6 +11,7 @@ from src.cli.tui.menus import MainMenuHandler
 from src.cli.tui.server_status import ServerStatusHandler
 from src.cli.tui.agent_info import AgentInfoHandler
 from src.cli.tui.individual_agent_runner import IndividualAgentRunner
+from src.cli.tui.environment_setup import EnvironmentSetupHandler
 
 class AmbitusApp:
     """Terminal User Interface for Ambitus AI Models"""
@@ -21,6 +22,7 @@ class AmbitusApp:
         self.server_status_handler = ServerStatusHandler(self.console)
         self.agent_info_handler = AgentInfoHandler(self.console)
         self.individual_agent_runner = IndividualAgentRunner(self.console)
+        self.environment_setup_handler = EnvironmentSetupHandler(self.console)
 
         
     def run(self):
@@ -30,25 +32,28 @@ class AmbitusApp:
             choice = self.menu_handler.get_user_choice()
             
             # Clear console before transitioning to new section
-            self.console.clear()
+            #self.console.clear()
             
-            if choice == "1":
+            if choice == "0":
+                self.environment_setup_handler.show_environment_setup()
+                #self.console.clear()
+            elif choice == "1":
                 self.individual_agent_runner.run()
                 # Clear console when returning from agent runner
-                self.console.clear()
+                #self.console.clear()
             elif choice == "2":
                 self.server_status_handler.show_server_status()
                 input("\nPress Enter to continue...")
-                self.console.clear()
+                #self.console.clear()
             elif choice == "3":
                 self.agent_info_handler.show_agent_info()
                 input("\nPress Enter to continue...")
-                self.console.clear()
+                #self.console.clear()
             elif choice == "4":
-                self.console.clear()
+                #self.console.clear()
                 self.console.print("[yellow]Goodbye![/yellow]")
                 break
             else:
                 self.console.print("[red]Invalid choice! Please try again.[/red]")
                 input("Press Enter to continue...")
-                self.console.clear()
+                #self.console.clear()

@@ -12,7 +12,7 @@ def run_command():
     try:
         # Clear console on startup
         console.clear()
-        console.print("[bold blue]Starting Ambitus Intelligence Agent Runner...[/bold blue]")
+        console.print("[bold blue]Starting Ambitus Agent Runner...[/bold blue]")
         
         # Create and run the agent runner directly
         agent_runner = IndividualAgentRunner(console)

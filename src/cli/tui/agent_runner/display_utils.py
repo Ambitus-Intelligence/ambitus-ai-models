@@ -6,6 +6,7 @@ from rich.table import Table
 from rich.columns import Columns
 from rich.markdown import Markdown
 from rich.syntax import Syntax
+from rich.align import Align
 
 
 class AgentOutputStyler:
@@ -255,28 +256,97 @@ class TUIComponentBuilder:
     """Builder for TUI components"""
     
     @staticmethod
-    def create_agent_list_panel(agents: Dict, current_index: int, agent_outputs: Dict) -> Panel:
-        """Create the left panel with agent selection"""
-        agent_list = Table(show_header=False, box=None)
-        agent_list.add_column("", style="cyan")
+    def create_agent_list_panel(agents: Dict, current_index: int, agent_outputs: Dict, system_status_handler=None) -> Panel:
+        """Create the left panel with agent selection and system status"""
+        # Agent list table
+        agent_list = Table(show_header=False, box=None, padding=(0, 1))
+        agent_list.add_column("", style="cyan", no_wrap=True)
         
         for i, (agent_name, _) in enumerate(agents.items()):
+            # Truncate long agent names for display
+            display_name = agent_name.replace(" Agent", "")
+            if len(display_name) > 20:
+                display_name = display_name[:17] + "..."
+                
             if i == current_index:
-                agent_list.add_row(f"▶ {agent_name}", style="bold green")
+                agent_list.add_row(f"▶ {display_name}", style="bold green")
             else:
                 status = "✓" if agent_name in agent_outputs else "○"
-                agent_list.add_row(f"{status} {agent_name}")
+                agent_list.add_row(f"{status} {display_name}")
         
-        controls = Text("\nControls:", style="bold")
-        controls.append("\n[W/S] Navigate Agents", style="dim")
-        controls.append("\n[A/D] Navigate Tabs", style="dim")
-        controls.append("\n[Enter/R] Run Agent", style="dim")
-        controls.append("\n[C] Run Chain", style="dim")
-        controls.append("\n[Q] Quit", style="dim")
+        # Controls section
+        controls = Text()
+        controls.append("Controls:\n", style="bold")
+        controls.append("[W/S] Navigate\n", style="dim")
+        controls.append("[A/D] Tabs\n", style="dim")
+        controls.append("[R] Run Agent\n", style="dim")
+        controls.append("[C] Run Chain\n", style="dim")
+        controls.append("[M] MCP Server\n", style="dim")
+        controls.append("[K] API Key\n", style="dim")
+        controls.append("[Q] Quit", style="dim")
         
-        content = Columns([agent_list, controls])
-        return Panel(content, title="Agent Selection", style="blue")
+        # System status section
+        status_text = Text()
+        status_text.append("System Status:\n", style="bold")
+        
+        if system_status_handler:
+            # Get current status
+            mcp_status = system_status_handler.check_mcp_server_status()
+            api_status = system_status_handler.check_openai_key_status()
+            
+            # MCP Server status
+            status_text.append("MCP: ", style="bold")
+            if mcp_status["running"]:
+                status_text.append("✅ Running\n", style="green")
+            else:
+                status_text.append("❌ Stopped\n", style="red")
+            
+            # API Key status
+            status_text.append("API: ", style="bold")
+            if api_status["available"]:
+                status_text.append("✅ Set\n", style="green")
+            else:
+                status_text.append("❌ Missing\n", style="red")
+            
+            status_text.append("\n[M] Toggle MCP\n[K] Set API Key", style="yellow")
+        else:
+            status_text.append("Status unavailable", style="red")
+        
+        # Create a layout for better organization
+        from rich.layout import Layout as InnerLayout
+        content_layout = InnerLayout()
+        content_layout.split_column(
+            InnerLayout(agent_list, name="agents", size=8),
+            InnerLayout(controls, name="controls", size=9),
+            InnerLayout(status_text, name="status")
+        )
+        
+        return Panel(content_layout, title="Agent Selection", style="blue")
     
+    @staticmethod
+    def create_title_header() -> Panel:
+        """Create the title header for the agent runner"""
+        from rich.align import Align
+        
+        # Create title text
+        title_text = Text()
+        title_text.append("Ambitus", style="bold blue")
+        title_text.append(" Agent Runner", style="italic cyan")
+        
+        # Create subtitle text
+        subtitle_text = Text("Market Research Automation Platform", style="dim")
+        
+        # Create combined content
+        content = Text()
+        content.append(title_text)
+        content.append("\n")
+        content.append(subtitle_text)
+        
+        # Center align the entire content
+        centered_content = Align.center(content)
+        
+        return Panel(centered_content, style="blue", padding=(0, 1))
+
     @staticmethod
     def create_tab_header(current_tab: str, has_scrollable_output: bool = False, is_report_agent: bool = False) -> Panel:
         """Create tab header with different tabs for report agent"""
@@ -344,7 +414,7 @@ class TUIComponentBuilder:
     @staticmethod
     def show_full_output_view(console, agent_name: str, output: Dict):
         """Show full JSON output in a separate view"""
-        console.clear()
+        #console.clear()
         console.print(f"\n[bold blue]Full Output - {agent_name}[/bold blue]")
         console.print("=" * 60)
         
@@ -356,4 +426,4 @@ class TUIComponentBuilder:
         console.print("\n[dim]Press Enter to return to main view...[/dim]")
         input()
         # Clear console before returning to main view
-        console.clear()
+        #console.clear()

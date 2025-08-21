@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 from rich.layout import Layout
-from rich.prompt import Prompt
+from rich.prompt import Prompt, Confirm
 
 from src.utils.models import (
     CompanyResearchRequest, MarketDataRequest, MarketGapAnalysisRequest,
@@ -22,6 +22,8 @@ from src.utils.validation import (
 from .display_utils import AgentOutputStyler, TUIComponentBuilder
 from .agent_executor import AgentExecutor
 from .report_handler import ReportHandler
+from .system_status import SystemStatusHandler
+from ..environment_setup import EnvironmentSetupHandler
 
 
 class IndividualAgentRunner:
@@ -35,7 +37,7 @@ class IndividualAgentRunner:
         self.agent_outputs = {}  # Store outputs for chaining
         self.selected_domain = None  # Store selected domain from industry analysis
         self.output_scroll_offset = 0  # For output scrolling
-        self.output_lines_per_page = 20  # Lines to show per page
+        self.output_lines_per_page = 18  # Reduced to make room for title
         
         # Initialize components
         self._initialize_validators()
@@ -43,6 +45,8 @@ class IndividualAgentRunner:
         self.styler = AgentOutputStyler()
         self.builder = TUIComponentBuilder()
         self.report_handler = ReportHandler(console)
+        self.system_status = SystemStatusHandler(console)
+        self.env_handler = EnvironmentSetupHandler(console)
 
     def _initialize_validators(self):
         """Initialize validators for each agent"""
@@ -275,7 +279,7 @@ class IndividualAgentRunner:
     def run(self):
         """Main runner interface with two-panel layout"""
         # Clear console on entry
-        self.console.clear()
+        #self.console.clear()
         
         while True:
             try:
@@ -284,7 +288,7 @@ class IndividualAgentRunner:
                 
                 if choice == "quit":
                     # Clear console before exiting
-                    self.console.clear()
+                    #self.console.clear()
                     break
                 elif choice == "run":
                     self._run_current_agent()
@@ -310,10 +314,14 @@ class IndividualAgentRunner:
                     self._reset_scroll()
                 elif choice == "save_pdf":
                     self._save_pdf_report()
+                elif choice == "mcp_toggle":
+                    self._handle_mcp_toggle()
+                elif choice == "api_key_setup":
+                    self._handle_api_key_setup()
                     
             except KeyboardInterrupt:
                 # Clear console on keyboard interrupt
-                self.console.clear()
+                #self.console.clear()
                 break
     
     def _get_user_input(self) -> str:
@@ -336,6 +344,10 @@ class IndividualAgentRunner:
             return "tab_prev"
         elif key.lower() == 'd':  # Navigate right in tabs
             return "tab_next"
+        elif key.lower() == 'm':  # MCP Server management
+            return "mcp_toggle"
+        elif key.lower() == 'k':  # API Key management
+            return "api_key_setup"
         elif key == '':  # Enter
             return "run"
         elif key.lower() == 'v':  # View full output
@@ -363,25 +375,34 @@ class IndividualAgentRunner:
     
     def _show_interface(self):
         """Display the two-panel interface"""
-        self.console.clear()
+        #self.console.clear()
         
         layout = Layout()
-        layout.split_row(
+        layout.split_column(
+            Layout(self.builder.create_title_header(), size=4),
+            Layout(name="main_content")
+        )
+        
+        layout["main_content"].split_row(
             Layout(name="left", ratio=1),
             Layout(name="right", ratio=2)
         )
         
-        # Left panel - Agent selection
+        # Left panel - Agent selection with system status
         layout["left"].update(self.builder.create_agent_list_panel(
-            self.agents, self.current_agent_index, self.agent_outputs))
+            self.agents, self.current_agent_index, self.agent_outputs, self.system_status))
         
         # Right panel - Tabbed content
         current_agent_name = list(self.agents.keys())[self.current_agent_index]
-        has_scrollable_output = (current_agent_name in self.agent_outputs and 
-                               self.agent_outputs[current_agent_name].get("success"))
+        is_report_agent = self._is_report_synthesis_agent()
+        has_scrollable_output = (
+            (current_agent_name in self.agent_outputs and self.agent_outputs[current_agent_name].get("success")) or
+            (is_report_agent and self.report_handler.can_generate_report(self.agent_outputs))
+        )
         
         layout["right"].split_column(
-            Layout(self.builder.create_tab_header(self.current_tab, has_scrollable_output), size=3),
+            Layout(self.builder.create_tab_header(
+                self.current_tab, has_scrollable_output, is_report_agent), size=3),
             Layout(self._create_tab_content())
         )
         
@@ -396,6 +417,10 @@ class IndividualAgentRunner:
             content = Panel(agent_def["description"], title=f"{current_agent_name} - Description")
             return content
         
+        elif self.current_tab == "report" and self._is_report_synthesis_agent():
+            content = self._create_report_display()
+            return Panel(content, title=f"{current_agent_name} - Report")
+        
         elif self.current_tab == "input":
             prev_agent_output = self._get_previous_agent_output(current_agent_name)
             content = self.builder.create_input_form(current_agent_name, agent_def, prev_agent_output)
@@ -406,6 +431,60 @@ class IndividualAgentRunner:
             return Panel(content, title=f"{current_agent_name} - Output")
         
         return Panel("Unknown tab", style="red")
+    
+    def _create_report_display(self) -> Text:
+        """Create consolidated report display for Report Synthesis Agent"""
+        content = Text()
+        
+        if not self.report_handler.can_generate_report(self.agent_outputs):
+            content.append("❌ Cannot Generate Report\n\n", style="bold red")
+            content.append("Missing data from required agents:\n", style="yellow")
+            
+            required_agents = [
+                "Company Research Agent", "Industry Analysis Agent", "Market Data Agent",
+                "Competitive Landscape Agent", "Market Gap Analysis Agent", "Opportunity Agent"
+            ]
+            
+            for agent in required_agents:
+                if agent not in self.agent_outputs or not self.agent_outputs[agent].get("success"):
+                    content.append(f"  ❌ {agent}\n", style="red")
+                else:
+                    content.append(f"  ✅ {agent}\n", style="green")
+            
+            content.append("\nRun the missing agents to generate the report.", style="dim")
+            return content
+        
+        # Generate consolidated report
+        report_text = self.report_handler.create_consolidated_report_text(self.agent_outputs)
+        
+        # Handle scrolling for long reports
+        report_lines = report_text.split('\n')
+        total_lines = len(report_lines)
+        
+        # Ensure scroll offset is within bounds
+        self.output_scroll_offset = max(0, min(self.output_scroll_offset, max(0, total_lines - self.output_lines_per_page)))
+        
+        if total_lines <= self.output_lines_per_page:
+            # Show all content if it fits
+            content.append(report_text, style="cyan")
+            content.append(self.report_handler.get_pdf_save_instructions(self.agent_outputs), style="green")
+        else:
+            # Show paginated content
+            start_line = self.output_scroll_offset
+            end_line = min(start_line + self.output_lines_per_page, total_lines)
+            
+            visible_lines = report_lines[start_line:end_line]
+            content.append('\n'.join(visible_lines), style="cyan")
+            
+            # Add scroll indicators
+            current_page = (start_line // self.output_lines_per_page) + 1
+            total_pages = max(1, (total_lines - 1) // self.output_lines_per_page + 1)
+            
+            content.append(f"\n\n--- Page {current_page}/{total_pages} (Lines {start_line + 1}-{end_line}/{total_lines}) ---", style="bold yellow")
+            content.append("\n[U/J] Scroll  [T] Reset", style="dim")
+            content.append(self.report_handler.get_pdf_save_instructions(self.agent_outputs), style="green")
+        
+        return content
     
     def _create_output_display(self, agent_name: str) -> Text:
         """Create styled output display for the agent with scrolling support"""
@@ -493,16 +572,21 @@ class IndividualAgentRunner:
                 self.builder.show_full_output_view(self.console, current_agent_name, output)
                 self.output_scroll_offset = 0  # Reset scroll when returning
     
-    # ...existing navigation methods...
     def _move_to_next_agent(self):
         """Move to the next agent in the list"""
         if self.current_agent_index < len(self.agents) - 1:
             self.current_agent_index += 1
+            # Reset to appropriate tab when switching agents
+            self.current_tab = "report" if self._is_report_synthesis_agent() else "input"
+            self.output_scroll_offset = 0
     
     def _move_to_previous_agent(self):
         """Move to the previous agent in the list"""
         if self.current_agent_index > 0:
             self.current_agent_index -= 1
+            # Reset to appropriate tab when switching agents
+            self.current_tab = "report" if self._is_report_synthesis_agent() else "input"
+            self.output_scroll_offset = 0
     
     def _switch_tab_next(self):
         """Switch to the next tab"""
@@ -753,17 +837,22 @@ class IndividualAgentRunner:
     
     def _show_interface(self):
         """Display the two-panel interface"""
-        self.console.clear()
+        #self.console.clear()
         
         layout = Layout()
-        layout.split_row(
+        layout.split_column(
+            Layout(self.builder.create_title_header(), size=4),
+            Layout(name="main_content")
+        )
+        
+        layout["main_content"].split_row(
             Layout(name="left", ratio=1),
             Layout(name="right", ratio=2)
         )
         
-        # Left panel - Agent selection
+        # Left panel - Agent selection with system status
         layout["left"].update(self.builder.create_agent_list_panel(
-            self.agents, self.current_agent_index, self.agent_outputs))
+            self.agents, self.current_agent_index, self.agent_outputs, self.system_status))
         
         # Right panel - Tabbed content
         current_agent_name = list(self.agents.keys())[self.current_agent_index]
@@ -796,3 +885,30 @@ class IndividualAgentRunner:
             # Reset to appropriate tab when switching agents
             self.current_tab = "report" if self._is_report_synthesis_agent() else "input"
             self.output_scroll_offset = 0
+    
+    def _handle_mcp_toggle(self):
+        """Handle MCP server start/stop"""
+        status = self.system_status.check_mcp_server_status()
+        
+        if status["running"]:
+            # Server is running, offer to stop
+            if Confirm.ask("[yellow]MCP Server is running. Stop it?[/yellow]", default=False):
+                result = self.system_status.stop_mcp_server()
+                if result["success"]:
+                    self.console.print(f"[green]✓ {result['message']}[/green]")
+                else:
+                    self.console.print(f"[red]✗ {result['message']}[/red]")
+        else:
+            # Server is not running, offer to start
+            if Confirm.ask("[yellow]MCP Server is not running. Start it?[/yellow]", default=True):
+                result = self.system_status.start_mcp_server()
+                if result["success"]:
+                    self.console.print(f"[green]✓ {result['message']}[/green]")
+                else:
+                    self.console.print(f"[red]✗ {result['message']}[/red]")
+        
+        input("Press Enter to continue...")
+    
+    def _handle_api_key_setup(self):
+        """Handle API key setup"""
+        self.env_handler.show_environment_setup()

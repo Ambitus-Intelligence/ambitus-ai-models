@@ -12,7 +12,7 @@ def tui_command():
     try:
         # Clear console on startup
         console.clear()
-        console.print("[bold blue]Starting Ambitus Intelligence TUI...[/bold blue]")
+        console.print("[bold blue]Starting Ambitus TUI...[/bold blue]")
         
         app = AmbitusApp()
         app.run()
