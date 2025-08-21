@@ -287,15 +287,32 @@ class TUIComponentBuilder:
             form.append(f"{description}\n", style="dim")
             
             # Show if data is available from previous agent
-            if prev_agent_output and field.lower() in [k.lower() for k in prev_agent_output.keys()]:
-                form.append("  ✓ Available from previous agent\n", style="green")
+            if prev_agent_output:
+                # Handle different field checking for different data types
+                if field.lower() == "domain" and "selected_domain" in prev_agent_output:
+                    form.append("  ✓ Domain selected from Industry Analysis\n", style="green")
+                elif field.lower() in [k.lower() for k in prev_agent_output.keys()]:
+                    form.append("  ✓ Available from previous agent\n", style="green")
+                elif field.lower() == "company_data" and any(key in prev_agent_output for key in ["name", "industry", "description"]):
+                    form.append("  ✓ Available from previous agent\n", style="green")
+                else:
+                    form.append("  ⚠ Requires manual input\n", style="yellow")
             else:
                 form.append("  ⚠ Requires manual input\n", style="yellow")
             form.append("\n")
         
         if prev_agent_output:
             form.append("\nPrevious Agent Output Available:", style="bold green")
-            form.append(f"\n{json.dumps(prev_agent_output, indent=2)[:200]}...", style="dim")
+            
+            # Show relevant information based on data type
+            if "selected_domain" in prev_agent_output:
+                form.append(f"\nSelected Domain: {prev_agent_output['selected_domain']}", style="dim")
+                if "opportunities" in prev_agent_output:
+                    form.append(f"\nOpportunities Found: {prev_agent_output.get('count', 0)}", style="dim")
+            else:
+                # Show truncated JSON for other data types
+                preview = json.dumps(prev_agent_output, indent=2)[:200]
+                form.append(f"\n{preview}...", style="dim")
         
         return form
     

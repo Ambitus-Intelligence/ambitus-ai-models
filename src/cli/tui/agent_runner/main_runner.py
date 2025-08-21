@@ -570,7 +570,22 @@ class IndividualAgentRunner:
         previous_output = self.agent_outputs.get(previous_agent)
         
         if previous_output and previous_output.get("success"):
-            return previous_output.get("data")
+            data = previous_output.get("data")
+            
+            # Handle different data types from previous agents
+            if isinstance(data, list):
+                # For list data (like from Industry Analysis), create a summary dict
+                return {
+                    "opportunities": data,
+                    "selected_domain": self.selected_domain,
+                    "count": len(data)
+                }
+            elif isinstance(data, dict):
+                # For dict data, return as-is
+                return data
+            else:
+                # For other types, wrap in a dict
+                return {"data": data}
         
         return None
     
