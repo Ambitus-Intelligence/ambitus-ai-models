@@ -16,9 +16,9 @@ except ImportError as e:
     raise
 
 try:
-    from src.mcp.tools.ping_tool import ping_tool
-    from src.mcp.tools.search_tool import search_tool
-    from src.mcp.tools.citation_agent_tool import citation_agent
+    from src.mcp_server.tools.ping_tool import ping_tool
+    from src.mcp_server.tools.search_tool import search_tool
+    from src.mcp_server.tools.citation_agent_tool import citation_agent
     TOOLS_AVAILABLE = True
 except ImportError as e:
     print(f"Warning: Some tools could not be imported: {e}")

@@ -11,7 +11,7 @@ console = Console()
 def mcp_command(host: str, port: int):
     """Start the MCP server"""
     try:
-        from src.mcp.server import main as mcp_main
+        from src.mcp_server.server import main as mcp_main
         
         console.print(f"[green]Starting MCP server on {host}:{port}[/green]")
         
