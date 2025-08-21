@@ -272,12 +272,17 @@ class IndividualAgentRunner:
     
     def run(self):
         """Main runner interface with two-panel layout"""
+        # Clear console on entry
+        self.console.clear()
+        
         while True:
             try:
                 self._show_interface()
                 choice = self._get_user_input()
                 
                 if choice == "quit":
+                    # Clear console before exiting
+                    self.console.clear()
                     break
                 elif choice == "run":
                     self._run_current_agent()
@@ -303,6 +308,8 @@ class IndividualAgentRunner:
                     self._reset_scroll()
                     
             except KeyboardInterrupt:
+                # Clear console on keyboard interrupt
+                self.console.clear()
                 break
     
     def _get_user_input(self) -> str:

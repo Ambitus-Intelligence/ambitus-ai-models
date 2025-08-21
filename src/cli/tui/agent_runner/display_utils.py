@@ -313,3 +313,5 @@ class TUIComponentBuilder:
         
         console.print("\n[dim]Press Enter to return to main view...[/dim]")
         input()
+        # Clear console before returning to main view
+        console.clear()
