@@ -133,23 +133,31 @@ class AgentOutputStyler:
         if not data:
             return output + "No market gaps identified."
         
+        # Ensure data is a list
+        if not isinstance(data, list):
+            return output + f"Invalid data format: expected list, got {type(data).__name__}"
+        
         # Group by impact level
         high_impact = [gap for gap in data if gap.get('impact', '').lower() == 'high']
         medium_impact = [gap for gap in data if gap.get('impact', '').lower() == 'medium']
         low_impact = [gap for gap in data if gap.get('impact', '').lower() == 'low']
+        other_impact = [gap for gap in data if gap.get('impact', '').lower() not in ['high', 'medium', 'low']]
         
         for impact_level, gaps, emoji in [
             ('HIGH IMPACT', high_impact, '🔥'),
             ('MEDIUM IMPACT', medium_impact, '⚡'),
-            ('LOW IMPACT', low_impact, '💡')
+            ('LOW IMPACT', low_impact, '💡'),
+            ('OTHER', other_impact, '📍')
         ]:
             if gaps:
-                output += f"{emoji} {impact_level} GAPS ({len(gaps)})\n{'-'*30}\n"
+                output += f"{emoji} {impact_level} GAPS ({len(gaps)})\n{'-'*40}\n"
                 for i, gap in enumerate(gaps, 1):
-                    output += f"{i}. {gap.get('gap', 'Unknown gap')}\n"
+                    output += f"\n{i}. {gap.get('gap', 'Unknown gap')}\n"
+                    output += f"   Impact: {gap.get('impact', 'Not specified')}\n"
                     output += f"   Evidence: {gap.get('evidence', 'No evidence provided')}\n"
                     source = gap.get('source', 'No source')
-                    output += f"   Source: {source}\n\n"
+                    output += f"   Source: {source}\n"
+                output += "\n"
         
         return output
     
@@ -161,27 +169,37 @@ class AgentOutputStyler:
         if not data:
             return output + "No opportunities identified."
         
+        # Ensure data is a list
+        if not isinstance(data, list):
+            return output + f"Invalid data format: expected list, got {type(data).__name__}"
+        
         # Group by priority
         high_priority = [opp for opp in data if opp.get('priority', '').lower() == 'high']
         medium_priority = [opp for opp in data if opp.get('priority', '').lower() == 'medium']
         low_priority = [opp for opp in data if opp.get('priority', '').lower() == 'low']
+        other_priority = [opp for opp in data if opp.get('priority', '').lower() not in ['high', 'medium', 'low']]
         
         for priority_level, opps, emoji in [
             ('HIGH PRIORITY', high_priority, '🚀'),
             ('MEDIUM PRIORITY', medium_priority, '⭐'),
-            ('LOW PRIORITY', low_priority, '💼')
+            ('LOW PRIORITY', low_priority, '💼'),
+            ('OTHER', other_priority, '📋')
         ]:
             if opps:
-                output += f"{emoji} {priority_level} OPPORTUNITIES ({len(opps)})\n{'-'*35}\n"
+                output += f"{emoji} {priority_level} OPPORTUNITIES ({len(opps)})\n{'-'*45}\n"
                 for i, opp in enumerate(opps, 1):
-                    output += f"{i}. {opp.get('title', 'Unknown opportunity')}\n"
+                    output += f"\n{i}. {opp.get('title', 'Unknown opportunity')}\n"
+                    output += f"   Priority: {opp.get('priority', 'Not specified')}\n"
                     output += f"   Description: {opp.get('description', 'No description provided')}\n"
                     sources = opp.get('sources', [])
-                    if sources:
-                        output += f"   Sources: {', '.join(sources[:2])}"
-                        if len(sources) > 2:
-                            output += f" (+{len(sources)-2} more)"
-                    output += "\n\n"
+                    if sources and isinstance(sources, list):
+                        output += f"   Sources: {', '.join(sources[:3])}"
+                        if len(sources) > 3:
+                            output += f" (+{len(sources)-3} more)"
+                        output += "\n"
+                    elif sources:
+                        output += f"   Sources: {str(sources)}\n"
+                output += "\n"
         
         return output
     

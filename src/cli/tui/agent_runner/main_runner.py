@@ -420,7 +420,11 @@ class IndividualAgentRunner:
         output_lines = styled_output.split('\n')
         total_lines = len(output_lines)
         
+        # Ensure scroll offset is within bounds
+        self.output_scroll_offset = max(0, min(self.output_scroll_offset, max(0, total_lines - self.output_lines_per_page)))
+        
         if total_lines <= self.output_lines_per_page:
+            # Show all content if it fits
             content.append(styled_output, style="cyan")
             content.append("\n\n[V] View Raw JSON", style="dim")
         else:
@@ -432,7 +436,10 @@ class IndividualAgentRunner:
             content.append('\n'.join(visible_lines), style="cyan")
             
             # Add scroll indicators with updated controls
-            content.append(f"\n\n--- Page {start_line//self.output_lines_per_page + 1}/{(total_lines-1)//self.output_lines_per_page + 1} ---", style="bold yellow")
+            current_page = (start_line // self.output_lines_per_page) + 1
+            total_pages = max(1, (total_lines - 1) // self.output_lines_per_page + 1)
+            
+            content.append(f"\n\n--- Page {current_page}/{total_pages} (Lines {start_line + 1}-{end_line}/{total_lines}) ---", style="bold yellow")
             content.append("\n[U/J] Scroll  [V] Raw JSON  [T] Reset", style="dim")
         
         return content
@@ -440,7 +447,7 @@ class IndividualAgentRunner:
     def _scroll_output_up(self):
         """Scroll output up"""
         if self.current_tab == "output":
-            self.output_scroll_offset = max(0, self.output_scroll_offset - 5)
+            self.output_scroll_offset = max(0, self.output_scroll_offset - 3)
     
     def _scroll_output_down(self):
         """Scroll output down"""
@@ -450,10 +457,11 @@ class IndividualAgentRunner:
                 output = self.agent_outputs[current_agent_name]
                 if output.get("success") and output.get("data"):
                     styled_output = self.styler.create_styled_data_display(current_agent_name, output["data"])
-                    total_lines = len(styled_output.split('\n'))
+                    output_lines = styled_output.split('\n')
+                    total_lines = len(output_lines)
                     max_offset = max(0, total_lines - self.output_lines_per_page)
-                    self.output_scroll_offset = min(max_offset, self.output_scroll_offset + 5)
-    
+                    self.output_scroll_offset = min(max_offset, self.output_scroll_offset + 3)
+
     def _reset_scroll(self):
         """Reset scroll to top"""
         self.output_scroll_offset = 0
