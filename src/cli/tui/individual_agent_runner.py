@@ -275,8 +275,10 @@ class IndividualAgentRunner:
                     self._move_to_next_agent()
                 elif choice == "prev":
                     self._move_to_previous_agent()
-                elif choice == "tab":
-                    self._switch_tab()
+                elif choice == "tab_prev":
+                    self._switch_tab_prev()
+                elif choice == "tab_next":
+                    self._switch_tab_next()
                 elif choice == "chain":
                     self._run_agent_chain()
                 elif choice == "reset":
@@ -319,11 +321,10 @@ class IndividualAgentRunner:
                 agent_list.add_row(f"{status} {agent_name}")
         
         controls = Text("\nControls:", style="bold")
-        controls.append("\n[↑/↓] Navigate", style="dim")
-        controls.append("\n[Enter] Select", style="dim")
-        controls.append("\n[R] Run Agent", style="dim")
+        controls.append("\n[W/S] Navigate Agents", style="dim")
+        controls.append("\n[A/D] Navigate Tabs", style="dim")
+        controls.append("\n[Enter/R] Run Agent", style="dim")
         controls.append("\n[C] Run Chain", style="dim")
-        controls.append("\n[T] Switch Tab", style="dim")
         controls.append("\n[Q] Quit", style="dim")
         
         content = Columns([agent_list, controls])
@@ -424,12 +425,14 @@ class IndividualAgentRunner:
             return "run"
         elif key.lower() in ['c', 'chain']:
             return "chain"
-        elif key.lower() in ['t', 'tab']:
-            return "tab"
-        elif key == '\x1b[A':  # Up arrow
+        elif key.lower() == 'w':  # Navigate up in agent list
             return "prev"
-        elif key == '\x1b[B':  # Down arrow
+        elif key.lower() == 's':  # Navigate down in agent list
             return "next"
+        elif key.lower() == 'a':  # Navigate left in tabs
+            return "tab_prev"
+        elif key.lower() == 'd':  # Navigate right in tabs
+            return "tab_next"
         elif key == '':  # Enter
             return "run"
         else:
@@ -518,12 +521,22 @@ class IndividualAgentRunner:
         if self.current_agent_index > 0:
             self.current_agent_index -= 1
     
-    def _switch_tab(self):
-        """Switch between tabs"""
+    def _switch_tab_next(self):
+        """Switch to next tab"""
         tabs = ["input", "output", "description"]
         current_index = tabs.index(self.current_tab)
         self.current_tab = tabs[(current_index + 1) % len(tabs)]
     
+    def _switch_tab_prev(self):
+        """Switch to previous tab"""
+        tabs = ["input", "output", "description"]
+        current_index = tabs.index(self.current_tab)
+        self.current_tab = tabs[(current_index - 1) % len(tabs)]
+    
+    def _switch_tab(self):
+        """Switch between tabs (kept for backward compatibility)"""
+        self._switch_tab_next()
+
     def _run_agent_chain(self):
         """Run all agents in sequence"""
         self.console.print("[bold yellow]Running agent chain...[/bold yellow]")
