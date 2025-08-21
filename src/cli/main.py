@@ -6,10 +6,9 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from src.cli.commands.api import api_command
+from src.cli.commands.api_server import api_command
 from src.cli.commands.both import both_command
-from src.cli.commands.mcp import mcp_command
-from src.cli.commands.pipeline import pipeline_command
+from src.cli.commands.mcp_server import mcp_command
 from src.cli.commands.tui import tui_command
 
 @click.group()
@@ -26,7 +25,6 @@ def main():
 main.add_command(api_command)
 main.add_command(both_command)
 main.add_command(mcp_command)
-main.add_command(pipeline_command)
 main.add_command(tui_command)
 
 if __name__ == "__main__":

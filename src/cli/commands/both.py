@@ -19,7 +19,7 @@ def both_command(mcp_host: str, mcp_port: int, api_host: str, api_port: int, rel
     def start_mcp():
         try:
             import os
-            from src.mcp.server import main as mcp_main
+            from src.mcp_server.server import main as mcp_main
             
             console.print(f"[green]Starting MCP server on {mcp_host}:{mcp_port}[/green]")
             

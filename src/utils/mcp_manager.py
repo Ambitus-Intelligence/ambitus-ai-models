@@ -33,7 +33,7 @@ class MCPServerManager:
         try:
             # Get the project root directory
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-            server_script = os.path.join(project_root, "src", "mcp", "server.py")
+            server_script = os.path.join(project_root, "src", "mcp_server", "server.py")
             
             # Start the server in a subprocess
             process = subprocess.Popen(
