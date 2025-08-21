@@ -1,6 +1,7 @@
 import os
 import subprocess
 import requests
+import time
 from typing import Dict, Any
 from rich.console import Console
 from rich.text import Text
@@ -11,45 +12,78 @@ class SystemStatusHandler:
     
     def __init__(self, console: Console):
         self.console = console
+        self._mcp_status_cache = None
+        self._mcp_cache_timestamp = 0
+        self._api_status_cache = None
+        self._api_cache_timestamp = 0
+        self._cache_duration = 15  # Cache for 15 seconds
     
     def check_mcp_server_status(self) -> Dict[str, Any]:
-        """Check if MCP server is running"""
+        """Check if MCP server is running (with caching)"""
+        current_time = time.time()
+        
+        # Return cached result if still valid
+        if (self._mcp_status_cache and 
+            current_time - self._mcp_cache_timestamp < self._cache_duration):
+            return self._mcp_status_cache
+        
         try:
-            response = requests.get("http://localhost:8000/health", timeout=2)
+            response = requests.get("http://localhost:8000/health", timeout=1)  # Reduced timeout
             if response.status_code == 200:
-                return {
+                result = {
                     "running": True,
                     "status": "✅ Running",
                     "message": "MCP Server is running on port 8000"
                 }
+            else:
+                result = {
+                    "running": False,
+                    "status": "❌ Not Running",
+                    "message": "MCP Server is not responding"
+                }
         except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, requests.exceptions.RequestException):
-            pass
+            result = {
+                "running": False,
+                "status": "❌ Not Running",
+                "message": "MCP Server is not responding"
+            }
         
-        return {
-            "running": False,
-            "status": "❌ Not Running",
-            "message": "MCP Server is not responding"
-        }
+        # Cache the result
+        self._mcp_status_cache = result
+        self._mcp_cache_timestamp = current_time
+        return result
     
     def check_openai_key_status(self) -> Dict[str, Any]:
-        """Check if OpenAI API key is available"""
+        """Check if OpenAI API key is available (with caching)"""
+        current_time = time.time()
+        
+        # Return cached result if still valid
+        if (self._api_status_cache and 
+            current_time - self._api_cache_timestamp < self._cache_duration):
+            return self._api_status_cache
+        
         api_key = os.getenv("OPENAI_API_KEY")
         
         if api_key and api_key.strip():
             masked_key = f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "***"
-            return {
+            result = {
                 "available": True,
                 "status": "✅ Available",
                 "value": masked_key,
                 "message": "OpenAI API Key is set"
             }
         else:
-            return {
+            result = {
                 "available": False,
                 "status": "❌ Not Set",
                 "value": "None",
                 "message": "OpenAI API Key is not configured"
             }
+        
+        # Cache the result
+        self._api_status_cache = result
+        self._api_cache_timestamp = current_time
+        return result
     
     def start_mcp_server(self) -> Dict[str, Any]:
         """Attempt to start MCP server"""
@@ -165,3 +199,10 @@ class SystemStatusHandler:
         status_text.append("\n[M] Toggle MCP\n[K] Manage API Key", style="yellow")
         
         return status_text
+    
+    def invalidate_cache(self):
+        """Invalidate all cached status results"""
+        self._mcp_status_cache = None
+        self._api_status_cache = None
+        self._mcp_cache_timestamp = 0
+        self._api_cache_timestamp = 0

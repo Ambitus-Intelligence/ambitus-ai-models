@@ -255,12 +255,16 @@ class AgentOutputStyler:
 class TUIComponentBuilder:
     """Builder for TUI components"""
     
+    def __init__(self):
+        self._cached_agents_panel = None
+        self._cached_agents_data = None
+    
     @staticmethod
     def create_agent_list_panel(agents: Dict, current_index: int, agent_outputs: Dict, system_status_handler=None) -> Panel:
         """Create the left panel with agent selection and system status"""
         # Agent list table
-        agent_list = Table(show_header=False, box=None, padding=(0, 1))
-        agent_list.add_column("", style="cyan", no_wrap=True)
+        agent_list = Table(show_header=False, box=None, padding=(0, 1), expand=False)
+        agent_list.add_column("", style="cyan", no_wrap=True, width=25)
         
         for i, (agent_name, _) in enumerate(agents.items()):
             # Truncate long agent names for display
@@ -274,7 +278,7 @@ class TUIComponentBuilder:
                 status = "✓" if agent_name in agent_outputs else "○"
                 agent_list.add_row(f"{status} {display_name}")
         
-        # Controls section
+        # Controls section (static content, no need to regenerate)
         controls = Text()
         controls.append("Controls:\n", style="bold")
         controls.append("[W/S] Navigate\n", style="dim")
@@ -285,12 +289,12 @@ class TUIComponentBuilder:
         controls.append("[K] API Key\n", style="dim")
         controls.append("[Q] Quit", style="dim")
         
-        # System status section
+        # System status section (use cached results)
         status_text = Text()
         status_text.append("System Status:\n", style="bold")
         
         if system_status_handler:
-            # Get current status
+            # Get current status (now cached)
             mcp_status = system_status_handler.check_mcp_server_status()
             api_status = system_status_handler.check_openai_key_status()
             
