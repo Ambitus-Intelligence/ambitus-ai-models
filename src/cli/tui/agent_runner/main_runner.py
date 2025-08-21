@@ -21,6 +21,7 @@ from src.utils.validation import (
 
 from .display_utils import AgentOutputStyler, TUIComponentBuilder
 from .agent_executor import AgentExecutor
+from .report_handler import ReportHandler
 
 
 class IndividualAgentRunner:
@@ -41,7 +42,8 @@ class IndividualAgentRunner:
         self.executor = AgentExecutor(console)
         self.styler = AgentOutputStyler()
         self.builder = TUIComponentBuilder()
-        
+        self.report_handler = ReportHandler(console)
+
     def _initialize_validators(self):
         """Initialize validators for each agent"""
         self.validators = {
@@ -306,6 +308,8 @@ class IndividualAgentRunner:
                     self._scroll_output_down()
                 elif choice == "reset_scroll":
                     self._reset_scroll()
+                elif choice == "save_pdf":
+                    self._save_pdf_report()
                     
             except KeyboardInterrupt:
                 # Clear console on keyboard interrupt
@@ -324,6 +328,8 @@ class IndividualAgentRunner:
             return "chain"
         elif key.lower() == 'w':  # Navigate up in agent list
             return "prev"
+        elif key.lower() == 's' and self._is_report_synthesis_agent():  # Save PDF for report agent
+            return "save_pdf"
         elif key.lower() == 's':  # Navigate down in agent list
             return "next"
         elif key.lower() == 'a':  # Navigate left in tabs
@@ -342,6 +348,18 @@ class IndividualAgentRunner:
             return "reset_scroll"
         else:
             return "invalid"
+    
+    def _is_report_synthesis_agent(self) -> bool:
+        """Check if current agent is Report Synthesis Agent"""
+        current_agent_name = list(self.agents.keys())[self.current_agent_index]
+        return current_agent_name == "Report Synthesis Agent"
+    
+    def _get_available_tabs(self) -> List[str]:
+        """Get available tabs based on current agent"""
+        if self._is_report_synthesis_agent():
+            return ["report", "description"]
+        else:
+            return ["input", "output", "description"]
     
     def _show_interface(self):
         """Display the two-panel interface"""
@@ -488,14 +506,14 @@ class IndividualAgentRunner:
     
     def _switch_tab_next(self):
         """Switch to the next tab"""
-        tabs = ["input", "output", "description"]
-        current_index = tabs.index(self.current_tab)
+        tabs = self._get_available_tabs()
+        current_index = tabs.index(self.current_tab) if self.current_tab in tabs else 0
         self.current_tab = tabs[(current_index + 1) % len(tabs)]
     
     def _switch_tab_prev(self):
         """Switch to the previous tab"""
-        tabs = ["input", "output", "description"]
-        current_index = tabs.index(self.current_tab)
+        tabs = self._get_available_tabs()
+        current_index = tabs.index(self.current_tab) if self.current_tab in tabs else 0
         self.current_tab = tabs[(current_index - 1) % len(tabs)]
     
     def _run_current_agent(self):
@@ -636,3 +654,145 @@ class IndividualAgentRunner:
                 "issues": [f"Validation error: {str(e)}"],
                 "schema_used": agent_name
             }
+    
+    def _save_pdf_report(self):
+        """Handle PDF report saving"""
+        if not self._is_report_synthesis_agent():
+            return
+        
+        self.console.print("[yellow]Generating PDF report...[/yellow]")
+        result = self.report_handler.save_pdf_report(self.agent_outputs)
+        
+        if result["success"]:
+            file_size_mb = result["file_size"] / (1024 * 1024)
+            self.console.print(f"[green]✓ PDF report saved successfully![/green]")
+            self.console.print(f"[cyan]Location: {result['file_path']}[/cyan]")
+            self.console.print(f"[cyan]Size: {file_size_mb:.2f} MB[/cyan]")
+        else:
+            self.console.print(f"[red]✗ Failed to save PDF: {result['error']}[/red]")
+        
+        input("Press Enter to continue...")
+    
+    def _create_tab_content(self) -> Panel:
+        """Create content for the current tab"""
+        current_agent_name = list(self.agents.keys())[self.current_agent_index]
+        agent_def = self.agents[current_agent_name]
+        
+        if self.current_tab == "description":
+            content = Panel(agent_def["description"], title=f"{current_agent_name} - Description")
+            return content
+        
+        elif self.current_tab == "report" and self._is_report_synthesis_agent():
+            content = self._create_report_display()
+            return Panel(content, title=f"{current_agent_name} - Report")
+        
+        elif self.current_tab == "input":
+            prev_agent_output = self._get_previous_agent_output(current_agent_name)
+            content = self.builder.create_input_form(current_agent_name, agent_def, prev_agent_output)
+            return Panel(content, title=f"{current_agent_name} - Input")
+        
+        elif self.current_tab == "output":
+            content = self._create_output_display(current_agent_name)
+            return Panel(content, title=f"{current_agent_name} - Output")
+        
+        return Panel("Unknown tab", style="red")
+    
+    def _create_report_display(self) -> Text:
+        """Create consolidated report display for Report Synthesis Agent"""
+        content = Text()
+        
+        if not self.report_handler.can_generate_report(self.agent_outputs):
+            content.append("❌ Cannot Generate Report\n\n", style="bold red")
+            content.append("Missing data from required agents:\n", style="yellow")
+            
+            required_agents = [
+                "Company Research Agent", "Industry Analysis Agent", "Market Data Agent",
+                "Competitive Landscape Agent", "Market Gap Analysis Agent", "Opportunity Agent"
+            ]
+            
+            for agent in required_agents:
+                if agent not in self.agent_outputs or not self.agent_outputs[agent].get("success"):
+                    content.append(f"  ❌ {agent}\n", style="red")
+                else:
+                    content.append(f"  ✅ {agent}\n", style="green")
+            
+            content.append("\nRun the missing agents to generate the report.", style="dim")
+            return content
+        
+        # Generate consolidated report
+        report_text = self.report_handler.create_consolidated_report_text(self.agent_outputs)
+        
+        # Handle scrolling for long reports
+        report_lines = report_text.split('\n')
+        total_lines = len(report_lines)
+        
+        # Ensure scroll offset is within bounds
+        self.output_scroll_offset = max(0, min(self.output_scroll_offset, max(0, total_lines - self.output_lines_per_page)))
+        
+        if total_lines <= self.output_lines_per_page:
+            # Show all content if it fits
+            content.append(report_text, style="cyan")
+            content.append(self.report_handler.get_pdf_save_instructions(self.agent_outputs), style="green")
+        else:
+            # Show paginated content
+            start_line = self.output_scroll_offset
+            end_line = min(start_line + self.output_lines_per_page, total_lines)
+            
+            visible_lines = report_lines[start_line:end_line]
+            content.append('\n'.join(visible_lines), style="cyan")
+            
+            # Add scroll indicators
+            current_page = (start_line // self.output_lines_per_page) + 1
+            total_pages = max(1, (total_lines - 1) // self.output_lines_per_page + 1)
+            
+            content.append(f"\n\n--- Page {current_page}/{total_pages} (Lines {start_line + 1}-{end_line}/{total_lines}) ---", style="bold yellow")
+            content.append("\n[U/J] Scroll  [T] Reset", style="dim")
+            content.append(self.report_handler.get_pdf_save_instructions(self.agent_outputs), style="green")
+        
+        return content
+    
+    def _show_interface(self):
+        """Display the two-panel interface"""
+        self.console.clear()
+        
+        layout = Layout()
+        layout.split_row(
+            Layout(name="left", ratio=1),
+            Layout(name="right", ratio=2)
+        )
+        
+        # Left panel - Agent selection
+        layout["left"].update(self.builder.create_agent_list_panel(
+            self.agents, self.current_agent_index, self.agent_outputs))
+        
+        # Right panel - Tabbed content
+        current_agent_name = list(self.agents.keys())[self.current_agent_index]
+        is_report_agent = self._is_report_synthesis_agent()
+        has_scrollable_output = (
+            (current_agent_name in self.agent_outputs and self.agent_outputs[current_agent_name].get("success")) or
+            (is_report_agent and self.report_handler.can_generate_report(self.agent_outputs))
+        )
+        
+        layout["right"].split_column(
+            Layout(self.builder.create_tab_header(
+                self.current_tab, has_scrollable_output, is_report_agent), size=3),
+            Layout(self._create_tab_content())
+        )
+        
+        self.console.print(layout)
+    
+    def _move_to_next_agent(self):
+        """Move to the next agent in the list"""
+        if self.current_agent_index < len(self.agents) - 1:
+            self.current_agent_index += 1
+            # Reset to appropriate tab when switching agents
+            self.current_tab = "report" if self._is_report_synthesis_agent() else "input"
+            self.output_scroll_offset = 0
+    
+    def _move_to_previous_agent(self):
+        """Move to the previous agent in the list"""
+        if self.current_agent_index > 0:
+            self.current_agent_index -= 1
+            # Reset to appropriate tab when switching agents
+            self.current_tab = "report" if self._is_report_synthesis_agent() else "input"
+            self.output_scroll_offset = 0

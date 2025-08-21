@@ -278,10 +278,14 @@ class TUIComponentBuilder:
         return Panel(content, title="Agent Selection", style="blue")
     
     @staticmethod
-    def create_tab_header(current_tab: str, has_scrollable_output: bool = False) -> Panel:
-        """Create tab header"""
+    def create_tab_header(current_tab: str, has_scrollable_output: bool = False, is_report_agent: bool = False) -> Panel:
+        """Create tab header with different tabs for report agent"""
         tabs = []
-        tab_names = ["input", "output", "description"]
+        
+        if is_report_agent:
+            tab_names = ["report", "description"]
+        else:
+            tab_names = ["input", "output", "description"]
         
         for tab in tab_names:
             if tab == current_tab:
@@ -289,9 +293,12 @@ class TUIComponentBuilder:
             else:
                 tabs.append(f"[dim]□ {tab.upper()}[/dim]")
         
-        # Add scroll info for output tab
-        if current_tab == "output" and has_scrollable_output:
-            tabs.append("[dim]| [U/J] Scroll [V] Full View [T] Reset[/dim]")
+        # Add scroll info for output/report tabs
+        if current_tab in ["output", "report"] and has_scrollable_output:
+            if is_report_agent and current_tab == "report":
+                tabs.append("[dim]| [U/J] Scroll [S] Save PDF [T] Reset[/dim]")
+            else:
+                tabs.append("[dim]| [U/J] Scroll [V] Full View [T] Reset[/dim]")
         
         return Panel(" ".join(tabs), style="yellow")
     
