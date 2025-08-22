@@ -5,7 +5,7 @@
 This repository contains AI/ML models, experiments, and tools powering **ambitus Intelligence**'s market research automation platform.  
 All exploratory work, prototypes, and notebooks are organized under `/notebooks`.
 
-![TUI Demo Video](docs/assets/videos/TUI_demo.mp4)
+![TUI Demo Video](https://github.com/Ambitus-Intelligence/ambitus-ai-models/blob/docs_update/docs/assets/videos/TUI_demo.mp4)
 
 ---
 
