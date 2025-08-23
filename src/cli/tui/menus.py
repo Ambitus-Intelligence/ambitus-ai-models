@@ -12,16 +12,17 @@ class MainMenuHandler:
         
     def show_main_menu(self):
         """Display the main menu"""
-        self.console.clear()
+        #self.console.clear()
         
         # Create header
-        header = Text("Ambitus AI Models", style="bold blue")
+        header = Text("Ambitus", style="bold blue")
         header.append(" - Market Research Automation Platform", style="italic")
         
         # Create menu panel
         menu_text = """
 [bold cyan]Main Menu[/bold cyan]
 
+[0] Environment Setup
 [1] Run Individual Agent
 [2] Server Status
 [3] Agent Information
@@ -39,4 +40,4 @@ Choose an option:"""
         
     def get_user_choice(self) -> str:
         """Get user input choice"""
-        return Prompt.ask("Enter your choice", choices=["1", "2", "3", "4"])
+        return Prompt.ask("Enter your choice", choices=["0", "1", "2", "3", "4"])
