@@ -1,6 +1,16 @@
-# ambitus-ai-models 🔍
+# ambitus-intelligence 🔍
+<!-- Reframe below line as the application is TUI native now. -->
+<!-- **Part of the [ambitus Intelligence](https://github.com/ambitus-intelligence) Ecosystem** -->
+Ambitus Intelligence is a TUI‑first Python package and multi‑agent market research engine that orchestrates validated data collection, analysis, and report synthesis into citation‑rich PDF reports.
 
-**Part of the [ambitus Intelligence](https://github.com/ambitus-intelligence) Ecosystem**
+**Technical diagrams** : [Flowcharts](docs/assets/flowcharts)\
+**UML of Ambitus** : [Ambitus-AI](docs/assets/flowcharts/ambitus_UML.svg)
+<!--
+ https://github.com/user-attachments/assets/c2d9086c-011c-4acd-bf9a-cad3c84a2968 
+-->
+
+https://github.com/user-attachments/assets/c726dbdf-9a5a-4c23-b34e-ae9926976c21
+
 
 This repository contains AI/ML models, experiments, and tools powering **ambitus Intelligence**'s market research automation platform.  
 All exploratory work, prototypes, and notebooks are organized under `/notebooks`.
