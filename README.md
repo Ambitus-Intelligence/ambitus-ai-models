@@ -1,6 +1,9 @@
-# ambitus-ai-models 🔍
+# ambitus-intelligence 🔍
 
+<!-- Reframe below line as the application is TUI native now. -->
 **Part of the [ambitus Intelligence](https://github.com/ambitus-intelligence) Ecosystem**
+
+
 
 This repository contains AI/ML models, experiments, and tools powering **ambitus Intelligence**'s market research automation platform.  
 All exploratory work, prototypes, and notebooks are organized under `/notebooks`.
