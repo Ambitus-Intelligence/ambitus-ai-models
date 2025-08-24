@@ -38,3 +38,17 @@ This folder contains project diagrams used across the docs and README.
   - Pydantic models involved in report synthesis (Company, IndustryOpportunity, CompetitiveLandscape, MarketData, MarketGap, Opportunity).
   - Request/response contracts for ReportSynthesisRequest/ReportSynthesisResponse and expected list shapes.
   - Aids API contract reviews and validator/schema alignment.
+
+- 🖥️ TUI Interaction UML
+  
+  ![TUI_UML](./TUI_UML.jpg)
+  - UML depiction of the terminal UI modules, command handlers, and navigation flow.
+  - Shows how user actions map to CLI/TUI commands and invoke API routes/agents.
+  - Useful for onboarding contributors working on the TUI/CLI experience.
+
+- 📘 Ambitus UML Overview
+  
+  ![ambitus_UML](./ambitus_UML.svg)
+  - High‑level UML of components: API routes, validators, agents, models, and their relationships.
+  - Clarifies dependencies between layers and where cross‑cutting concerns (logging/validation) live.
+  - Handy reference when refactoring module boundaries or adding new agents.
