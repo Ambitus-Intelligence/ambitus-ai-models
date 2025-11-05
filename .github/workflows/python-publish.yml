@@ -45,18 +45,18 @@ jobs:
     
     - name: Run linting
       run: |
-        uv run ruff check src/ --exclude notebook/
-        uv run ruff format --check src/ --exclude notebook/
+        uv run ruff check src/ --exclude notebooks/
+        uv run ruff format --check src/ --exclude notebooks/
       continue-on-error: true
     
     - name: Run type checking
       run: |
-        uv run mypy src/ --exclude notebook/
+        uv run mypy src/ --exclude notebooks/
       continue-on-error: true
     
     - name: Run tests
       run: |
-        uv run pytest tests/ -v --cov=src --cov-report=xml --ignore=notebook/
+        uv run pytest tests/ -v --cov=src --cov-report=xml --ignore=notebooks/
       continue-on-error: true
     
     - name: Upload coverage reports
@@ -90,7 +90,7 @@ jobs:
     
     - name: Build package
       run: |
-        uvx build
+        uvx --from build pyproject-build
     
     - name: Check package
       run: |
