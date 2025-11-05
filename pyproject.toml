@@ -1,7 +1,7 @@
 [project]
 name = "ambitus-cli"
 version = "0.1.0"
-description = "Ambitus AI Models - A collection of AI models for various tasks"
+description = "a TUI‑first Python package and multi‑agent market research engine that orchestrates validated data collection, analysis, and report synthesis into citation‑rich PDF reports"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
