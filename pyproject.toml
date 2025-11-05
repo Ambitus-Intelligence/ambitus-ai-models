@@ -1,5 +1,5 @@
 [project]
-name = "ambitus-ai-models"
+name = "ambitus-cli"
 version = "0.1.0"
 description = "Ambitus AI Models - A collection of AI models for various tasks"
 readme = "README.md"
